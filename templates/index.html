@@ -281,6 +281,13 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   #sGame{flex-direction:row;flex-wrap:wrap;}
 }
 
+.close-room-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
+  border-radius:8px;padding:9px;font-family:'Cinzel',serif;font-size:12px;color:#f87171;
+  cursor:pointer;letter-spacing:1px;width:100%;margin-top:6px;}
+.close-room-btn:hover{background:rgba(220,38,38,0.35);}
+.end-btn{background:transparent;border:1px solid rgba(248,113,113,0.4);border-radius:6px;
+  padding:3px 10px;font-size:10px;color:#f87171;cursor:pointer;font-family:'Cinzel',serif;}
+.end-btn:hover{background:rgba(248,113,113,0.15);}
 .skip-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
   border-radius:6px;padding:3px 8px;font-size:10px;color:#f87171;cursor:pointer;
   margin-left:4px;font-family:'Cinzel',serif;letter-spacing:1px;}
@@ -494,6 +501,9 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   <button class="btn full" id="startBtn" onclick="doStart()" style="display:none;">
     START GAME
   </button>
+  <button class="close-room-btn" id="closeRoomBtnLobby" onclick="doCloseRoom()" style="display:none;">
+    ✕ CLOSE &amp; END ROOM
+  </button>
   <div class="info-hint" id="waitHint">Waiting for host to start...</div>
 </div>
 
@@ -507,6 +517,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
       <span id="gTrumpName" style="font-size:12px;">Spades</span>
     </div>
     <div class="my-score">Score: <span id="gMyScore">0</span></div>
+    <button class="end-btn" id="gEndBtn" onclick="doCloseRoom()" style="display:none;">✕ END</button>
     <div style="font-size:9px;color:rgba(201,168,76,0.2);letter-spacing:1px;font-family:'Cinzel',serif;display:none;" id="watermark">VP©2025</div>
   </div>
   <!-- Round track -->
@@ -637,6 +648,15 @@ window.onload = () => {
       if (el2) el2.textContent = 'Room: ' + S.myCode;
       show('sRejoin');
     }
+  });
+  S.socket.on('room_closed', d => {
+    alert(d.msg || 'Room has been closed by host.');
+    localStorage.removeItem('kf_name');
+    localStorage.removeItem('kf_code');
+    sessionStorage.removeItem('kf_name');
+    sessionStorage.removeItem('kf_code');
+    S.myName = ''; S.myCode = '';
+    show('sLanding');
   });
   S.socket.on('player_joined', d => {
     toast(`${d.name} joined! (${d.count} players)`, 'success');
@@ -811,6 +831,8 @@ function renderLobby(st) {
   });
 
   document.getElementById('startBtn').style.display    = S.isHost ? '' : 'none';
+  const clb = document.getElementById('closeRoomBtnLobby');
+  if (clb) clb.style.display = S.isHost ? '' : 'none';
   document.getElementById('waitHint').style.display    = S.isHost ? 'none' : '';
 }
 
@@ -830,6 +852,8 @@ function renderGame(st) {
   ts.style.color = st.trump_col==='red' ? '#f87171' : '#e2e8f0';
   document.getElementById('gTrumpName').textContent = st.trump_name;
   document.getElementById('gMyScore').textContent = me.score;
+  const geb = document.getElementById('gEndBtn');
+  if (geb) geb.style.display = S.isHost ? '' : 'none';
 
   // Round track
   const track = document.getElementById('gTrack');
@@ -1062,6 +1086,11 @@ function doBid(amt) {
 
 function doPlay(idx) {
   S.socket.emit('play', {code:S.myCode, card_idx:idx, name:S.myName});
+}
+
+function doCloseRoom() {
+  if (!confirm('Close this room? All players will be disconnected.')) return;
+  S.socket.emit('close_room', {code: S.myCode});
 }
 
 function doSkipPlayer(name) {
