@@ -851,6 +851,8 @@ function renderGame(st) {
     const bidTxt = p.bid===null ? '—' : p.bid;
     const skipBtn = (S.isHost && !p.connected && !p.skipped && p.name !== S.myName)
       ? `<button class="skip-btn" onclick="doSkipPlayer('${p.name}')">SKIP</button>` : '';
+    const skippedBadge = p.skipped ? ' <span class="skipped-badge">[SKIPPED]</span>' : '';
+    const waitingBadge = p.waiting ? ' <span class="waiting-badge">[WAITING]</span>' : '';
     opps.innerHTML += `
       <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}" style="${p.skipped?'opacity:0.45;':''}">
         <div class="opp-av" style="background:${col}22;color:${col}">${p.name.slice(0,2).toUpperCase()}</div>
