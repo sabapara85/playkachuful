@@ -645,7 +645,14 @@ window.onload = () => {
   const pathCode = window.location.pathname.split('/join/')[1];
   if (pathCode) document.getElementById('joinCode').value = pathCode.toUpperCase();
 
-  S.socket = io();
+  S.socket = io({
+    transports: ['websocket', 'polling'],
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    timeout: 20000
+  });
   S.socket.on('joined',   onJoined);
   S.socket.on('state',    onState);
   S.socket.on('err',           onErr);
