@@ -1,12 +1,6 @@
 import os, json
-
-# Use gevent on Render (production), eventlet locally
-if os.environ.get('RENDER'):
-    from gevent import monkey
-    monkey.patch_all()
-else:
-    import eventlet
-    eventlet.monkey_patch()
+import eventlet
+eventlet.monkey_patch()
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
@@ -15,16 +9,14 @@ import random, string
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'kachuful-2024-secret')
 
-async_mode = 'gevent' if os.environ.get('RENDER') else 'eventlet'
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode=async_mode,
+    async_mode='eventlet',
     logger=False,
     engineio_logger=False,
     ping_timeout=60,
-    ping_interval=25,
-    transports=['websocket', 'polling']
+    ping_interval=25
 )
 
 SUITS     = ['S','D','C','H']
@@ -75,8 +67,7 @@ def save_games():
                 'trick':g.trick,'tlead':g.tlead,'history':g.history,'maxc':g.maxc,
                 'players':[{'sid':p['sid'],'name':p['name'],'is_host':p['is_host'],
                     'score':p['score'],'bid':p['bid'],'won':p['won'],
-                    'cards':p['cards'],'connected':False} for p in g.players],
-                'skipped':list(g.skipped),'waiting':list(g.waiting)}
+                    'cards':p['cards'],'connected':False} for p in g.players]}
         with open(SAVE_FILE,'w') as f: json.dump(data,f)
     except Exception as e: print(f'Save error: {e}')
 
@@ -93,7 +84,6 @@ def load_games():
             g.didx=d['didx']; g.cidx=d['cidx']; g.trump=d['trump']
             g.trick=d['trick']; g.tlead=d['tlead']; g.history=d['history']
             g.maxc=d['maxc']; g.players=d['players']
-            g.skipped=set(d.get('skipped',[])); g.waiting=set(d.get('waiting',[]))
             restored[code]=g
             print(f'Restored game {code} — {len(g.players)} players, round {g.ridx+1}')
         return restored
@@ -115,8 +105,6 @@ class Game:
         self.num_decks=2; self.players=[]; self.rseq=[]; self.ridx=0
         self.didx=0; self.cidx=0; self.trump=None; self.trick=[]
         self.tlead=0; self.history=[]; self.maxc=0
-        self.skipped=set()
-        self.waiting=set()
         self.add_player(hsid,hname,True)
 
     def add_player(self,sid,name,host=False):
@@ -133,78 +121,35 @@ class Game:
         for p in self.players: p['score']=0
         self._deal(deck)
 
-    def _next_active(self,idx):
-        for _ in range(self.N()):
-            if self.players[idx]['sid'] not in self.skipped: return idx
-            idx=(idx+1)%self.N()
-        return idx
-
-    def _auto_advance_bid(self):
-        safety=0
-        while self.status=='bidding' and self.players[self.cidx]['sid'] in self.skipped:
-            safety+=1
-            if safety>self.N(): break
-            self.players[self.cidx]['bid']=0
-            self.cidx=(self.cidx+1)%self.N()
-        active=[p for p in self.players if p['sid'] not in self.skipped]
-        if active and all(p['bid'] is not None for p in active):
-            self.status='playing'; self.cidx=self._next_active(self.tlead)
-
-    def skip_player(self,sid):
-        p=self.P(sid)
-        if not p: return False
-        self.skipped.add(sid)
-        p['cards']=[]; p['bid']=None; p['won']=0
-        pi=self.I(sid)
-        if self.status=='bidding' and self.cidx==pi:
-            p['bid']=0
-            self.cidx=(self.cidx+1)%self.N()
-            self._auto_advance_bid()
-        if self.status=='playing' and self.cidx==pi:
-            self.cidx=self._next_active((self.cidx+1)%self.N())
-        return True
-
     def _deal(self,deck=None):
         nc=self.rseq[self.ridx]; self.trump=TRUMP_CYC[self.ridx%4]
         self.trick=[]
-        # Restore waiting players at start of new round
-        for p in self.players:
-            if p['sid'] in self.waiting:
-                self.waiting.discard(p['sid'])
-                self.skipped.discard(p['sid'])
         for p in self.players: p['bid']=None; p['won']=0; p['cards']=[]
         if deck is None:
             deck,_=balance_deck(self.num_decks,self.N())
-        di=0
-        for p in self.players:
-            if p['sid'] not in self.skipped:
-                p['cards']=deck[di*nc:(di+1)*nc]; di+=1
-        self.tlead=self._next_active((self.didx+1)%self.N())
-        self.cidx=self.tlead
+        for i,p in enumerate(self.players): p['cards']=deck[i*nc:(i+1)*nc]
+        self.tlead=(self.didx+1)%self.N(); self.cidx=self.tlead
         self.status='bidding'
-        self._auto_advance_bid()
 
     def advance(self):
         self.ridx+=1; self.didx=(self.didx+1)%self.N(); self._deal()
 
     def bid(self,sid,amt):
         p=self.P(sid); pi=self.I(sid)
-        if not p or p['sid'] in self.skipped: return False,"Player is skipped"
-        if pi!=self.cidx or p['bid'] is not None: return False,"Not your turn"
+        if not p or pi!=self.cidx or p['bid'] is not None: return False,"Not your turn"
         nc=self.rseq[self.ridx]
         if amt<0 or amt>nc: return False,"Invalid bid"
         if pi==self.didx:
             others=sum(x['bid'] for x in self.players if x['bid'] is not None)
             if others+amt==nc: return False,f"Hook rule: cannot bid {amt}"
         p['bid']=amt; self.cidx=(self.cidx+1)%self.N()
-        # Auto-advance past skipped players, sets status=playing when all active bid
-        self._auto_advance_bid()
+        if all(x['bid'] is not None for x in self.players):
+            self.status='playing'; self.cidx=self.tlead
         return True,"ok"
 
     def play(self,sid,ci):
         p=self.P(sid); pi=self.I(sid)
-        if not p or p['sid'] in self.skipped: return False,"Player is skipped this round"
-        if pi!=self.cidx: return False,"Not your turn"
+        if not p or pi!=self.cidx: return False,"Not your turn"
         if ci<0 or ci>=len(p['cards']): return False,"Invalid card"
         card=p['cards'][ci]
         if self.trick:
@@ -213,11 +158,8 @@ class Game:
                 return False,f"Must follow {SUIT_SYM[led]}"
         p['cards'].pop(ci)
         self.trick.append({'sid':sid,'name':p['name'],'card':card})
-        # Advance to next non-skipped player
-        self.cidx = self._next_active((self.cidx+1)%self.N())
-        # Trick done when all active players have played
-        active_count = sum(1 for x in self.players if x['sid'] not in self.skipped)
-        return True,('trick_done' if len(self.trick)==active_count else 'ok')
+        self.cidx=(self.cidx+1)%self.N()
+        return True,('trick_done' if len(self.trick)==self.N() else 'ok')
 
     def resolve(self):
         led=self.trick[0]['card']['suit']; w=self.trick[0]
@@ -227,26 +169,15 @@ class Game:
         wi=self.I(w['sid']); self.tlead=wi; self.cidx=wi
         t=self.trick[:]; self.trick=[]; return w['sid'],w['name'],t
 
-    def active_count(self):
-        return sum(1 for p in self.players if p['sid'] not in self.skipped)
-
-    def check_pause(self):
-        return self.active_count() < 2 and self.status in ('bidding','playing')
-
-    def done(self):
-        active=[p for p in self.players if p['sid'] not in self.skipped]
-        return all(len(p['cards'])==0 for p in active) if active else True
+    def done(self): return all(len(p['cards'])==0 for p in self.players)
     def last(self): return self.ridx>=len(self.rseq)-1
 
     def score(self):
         nc=self.rseq[self.ridx]; res=[]
         for p in self.players:
-            if p['sid'] in self.skipped:
-                res.append({'name':p['name'],'bid':'-','won':'-','pts':0,'total':p['score'],'skipped':True})
-            else:
-                pts=(10 if p['bid']==0 else 20+p['bid']) if p['bid']==p['won'] else 0
-                p['score']+=pts
-                res.append({'name':p['name'],'bid':p['bid'],'won':p['won'],'pts':pts,'total':p['score'],'skipped':False})
+            pts=(10 if p['bid']==0 else 20+p['bid']) if p['bid']==p['won'] else 0
+            p['score']+=pts
+            res.append({'name':p['name'],'bid':p['bid'],'won':p['won'],'pts':pts,'total':p['score']})
         self.history.append({'round':self.ridx+1,'cards':nc,'trump':self.trump,'scores':res})
         self.status='round_end'; return res
 
@@ -266,13 +197,10 @@ class Game:
         for p in self.players:
             pd={'sid':p['sid'],'name':p['name'],'score':p['score'],
                 'bid':p['bid'],'won':p['won'],'card_count':len(p['cards']),
-                'is_host':p['is_host'],'connected':p['connected'],
-                'skipped':p['sid'] in self.skipped,
-                'waiting':p['sid'] in self.waiting}
+                'is_host':p['is_host'],'connected':p['connected']}
             if fsid and p['sid']==fsid: pd['cards']=p['cards']
             ps.append(pd)
-        is_paused=self.check_pause() if self.status in ('bidding','playing') else False
-        return {'code':self.code,'status':'paused' if is_paused else self.status,'num_decks':self.num_decks,
+        return {'code':self.code,'status':self.status,'num_decks':self.num_decks,
                 'ridx':self.ridx,'rseq':self.rseq,'cur_cards':nc,
                 'trump':self.trump,'trump_sym':SUIT_SYM.get(self.trump,''),
                 'trump_name':SUIT_NAME.get(self.trump,''),
@@ -377,10 +305,7 @@ def on_play(d):
     if msg=='trick_done':
         wsid,wname,trick=g.resolve()
         socketio.emit('trick_result',{'winner':wname,'trick':trick},room=g.code)
-        if os.environ.get('RENDER'):
-            from gevent import sleep as gsleep; gsleep(2.5)
-        else:
-            eventlet.sleep(2.5)
+        eventlet.sleep(2.5)
         if g.done():
             res=g.score()
             bcast(g)
@@ -410,43 +335,11 @@ def on_reconnect(d):
     old=p['sid']; p['sid']=request.sid; p['connected']=True
     if g.host_sid==old: g.host_sid=request.sid
     join_room(code); join_room(request.sid)
-    if p['sid'] in g.skipped and g.status in ('bidding','playing'):
-        g.waiting.add(request.sid)
-        save_games()
-        emit('joined',{'code':code,'you':name,'reconnected':True,'waiting':True})
-        emit('state',g.snap(request.sid))
-        return
-    g.skipped.discard(p['sid']); g.waiting.discard(p['sid'])
     save_games()
-    emit('joined',{'code':code,'you':name,'reconnected':True,'waiting':False})
+    emit('joined',{'code':code,'you':name,'reconnected':True})
     emit('state',g.snap(request.sid))
-    if g.active_count() >= 2:
-        socketio.emit('toast',{'msg':f'{name} rejoined! Game resumes!','t':'success'},room=code)
-    else:
-        socketio.emit('toast',{'msg':f'{name} rejoined!','t':'success'},room=code)
+    socketio.emit('toast',{'msg':f'{name} rejoined!','t':'success'},room=code)
     bcast_all(g)
-
-@socketio.on('skip_player')
-def on_skip(d):
-    code=d.get('code'); tname=d.get('name','')
-    if code not in games: return
-    g=games[code]
-    if request.sid!=g.host_sid: emit('err',{'msg':'Only host can skip'}); return
-    p=next((x for x in g.players if x['name'].lower()==tname.lower()),None)
-    if not p: emit('err',{'msg':'Player not found'}); return
-    if p['sid']==g.host_sid: emit('err',{'msg':'Cannot skip host'}); return
-    ok=g.skip_player(p['sid'])
-    if not ok: emit('err',{'msg':'Could not skip'}); return
-    save_games()
-    socketio.emit('toast',{'msg':f'{tname} skipped for this round onward','t':'warn'},room=code)
-    if g.check_pause():
-        socketio.emit('toast',{'msg':'Game paused — waiting for at least 2 players...','t':'warn'},room=code)
-        bcast(g)
-    elif g.done():
-        res=g.score(); bcast(g)
-        if g.last(): socketio.emit('game_over',{'final':g.final()},room=code)
-        else: socketio.emit('round_end',{'result':res,'round':g.ridx+1},room=code)
-    else: bcast(g)
 
 @socketio.on('chat_msg')
 def on_chat(d):
@@ -463,10 +356,7 @@ def on_dc():
         # Wait 6 seconds — if player reconnected with new SID, their old SID
         # will still be in players but connected=True (updated by reconnect)
         # Only mark disconnected if SID still matches (no reconnect happened)
-        if os.environ.get('RENDER'):
-            from gevent import sleep as gsleep; gsleep(6)
-        else:
-            eventlet.sleep(6)
+        eventlet.sleep(6)
         for code,g in games.items():
             p=g.P(sid)
             if p and not p['connected']:
