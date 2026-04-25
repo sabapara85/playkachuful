@@ -373,6 +373,18 @@ def on_next(d):
     nc=g.rseq[g.ridx]
     socketio.emit('toast',{'msg':f'Round {g.ridx+1} — {nc} card(s). Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
 
+@socketio.on('close_room')
+def on_close_room(d):
+    code=d.get('code')
+    if code not in games: return
+    g=games[code]
+    if request.sid!=g.host_sid:
+        emit('err',{'msg':'Only host can close room'}); return
+    socketio.emit('room_closed',{'msg':'Host has closed the room'},room=code)
+    del games[code]
+    save_games()
+    print(f'Room {code} closed by host')
+
 @socketio.on('reconnect_player')
 def on_reconnect(d):
     code=d.get('code'); name=d.get('name','')
