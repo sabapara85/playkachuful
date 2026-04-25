@@ -9,15 +9,7 @@ import random, string
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'kachuful-2024-secret')
 
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode='eventlet',
-    logger=False,
-    engineio_logger=False,
-    ping_timeout=60,
-    ping_interval=25
-)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 SUITS     = ['S','D','C','H']
 SUIT_SYM  = {'S':'♠','D':'♦','C':'♣','H':'♥'}
