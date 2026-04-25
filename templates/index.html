@@ -281,6 +281,12 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   #sGame{flex-direction:row;flex-wrap:wrap;}
 }
 
+.skip-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
+  border-radius:6px;padding:3px 8px;font-size:10px;color:#f87171;cursor:pointer;
+  margin-left:4px;font-family:'Cinzel',serif;letter-spacing:1px;}
+.skip-btn:hover{background:rgba(220,38,38,0.3);}
+.skipped-badge{font-size:10px;color:#f87171;margin-left:4px;}
+.waiting-badge{font-size:10px;color:#fbbf24;margin-left:4px;}
 /* ═══════════════════════════ CHAT ═══════════════════════════ */
 #chatBtn{position:fixed;bottom:70px;right:14px;width:46px;height:46px;
   border-radius:50%;background:rgba(201,168,76,0.9);border:none;
@@ -341,28 +347,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   padding-top:8px;border-top:1px solid rgba(201,168,76,0.1);}
 .vol-row label{font-size:10px;color:rgba(201,168,76,0.5);letter-spacing:1px;}
 #volSlider{flex:1;height:3px;accent-color:#c9a84c;cursor:pointer;}
-
-/* ===== SKIP PLAYER BUTTON ===== */
-.skip-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
-  border-radius:6px;padding:3px 8px;font-size:10px;color:#f87171;cursor:pointer;
-  margin-left:auto;flex-shrink:0;font-family:'Cinzel',serif;letter-spacing:1px;}
-.skip-btn:hover{background:rgba(220,38,38,0.3);}
-.waiting-badge{font-size:10px;color:#fbbf24;margin-left:4px;letter-spacing:1px;}
-.waiting-screen{background:rgba(0,0,0,0.6);border:1px solid rgba(251,191,36,0.4);
-  border-radius:10px;padding:16px;text-align:center;margin:10px;}
-.waiting-title{font-family:'Cinzel',serif;font-size:14px;color:#fbbf24;margin-bottom:8px;}
-.waiting-msg{font-size:13px;color:rgba(240,230,200,0.7);line-height:1.6;}
-
-/* ===== PAUSED SCREEN ===== */
-.paused-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.75);
-  z-index:50;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:12px;border-radius:16px;}
-.paused-box{background:rgba(13,40,24,0.98);border:2px solid rgba(251,191,36,0.6);
-  border-radius:12px;padding:24px;text-align:center;max-width:280px;}
-.paused-icon{font-size:48px;margin-bottom:8px;}
-.paused-title{font-family:'Cinzel',serif;font-size:18px;color:#fbbf24;
-  letter-spacing:2px;margin-bottom:8px;}
-.paused-msg{font-size:13px;color:rgba(240,230,200,0.7);line-height:1.7;}
 </style>
 </head>
 <body>
@@ -515,14 +499,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
 
 <!-- ══════════ GAME ══════════ -->
 <div id="sGame" class="screen">
-  <!-- Paused overlay -->
-  <div class="paused-overlay" id="pausedOverlay" style="display:none;">
-    <div class="paused-box">
-      <div class="paused-icon">⏸</div>
-      <div class="paused-title">GAME PAUSED</div>
-      <div class="paused-msg">Only 1 active player remaining.<br><br>Waiting for at least 2 players...<br>Ask friends to rejoin!</div>
-    </div>
-  </div>
   <!-- Top bar -->
   <div class="game-top">
     <div class="round-badge" id="gRound">Round 1</div>
@@ -548,15 +524,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
     <div class="bid-title" id="bidTitle">YOUR BID — How many tricks will you win?</div>
     <div class="bid-btns" id="bidBtns"></div>
     <div class="hook-note" id="hookNote"></div>
-  </div>
-  <!-- Waiting screen (shown when player is waiting to rejoin) -->
-  <div class="waiting-screen" id="waitingScreen" style="display:none;">
-    <div class="waiting-title">⏳ ROUND IN PROGRESS</div>
-    <div class="waiting-msg">
-      You have been skipped for this round.<br>
-      Please wait — you will automatically<br>
-      rejoin at the start of the next round!
-    </div>
   </div>
   <!-- My hand -->
   <div class="my-area">
@@ -645,14 +612,7 @@ window.onload = () => {
   const pathCode = window.location.pathname.split('/join/')[1];
   if (pathCode) document.getElementById('joinCode').value = pathCode.toUpperCase();
 
-  S.socket = io({
-    transports: ['websocket', 'polling'],
-    upgrade: true,
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 1000,
-    timeout: 20000
-  });
+  S.socket = io();
   S.socket.on('joined',   onJoined);
   S.socket.on('state',    onState);
   S.socket.on('err',           onErr);
@@ -767,7 +727,6 @@ function onState(st) {
   if (st.status === 'lobby')     return renderLobby(st);
   if (st.status === 'bidding')   return renderGame(st);
   if (st.status === 'playing')   return renderGame(st);
-  if (st.status === 'paused')    return renderPaused(st);
   if (st.status === 'round_end') return renderScores(st);
 }
 
@@ -858,9 +817,6 @@ function renderLobby(st) {
 // ── Render Game ────────────────────────────────────────────────
 function renderGame(st) {
   show('sGame');
-  // Hide paused overlay when game is active
-  const po = document.getElementById('pausedOverlay');
-  if (po) po.style.display = 'none';
   if (!S.myName) S.myName = sessionStorage.getItem('kf_name') || '';
   const me = st.players.find(p => p.name === S.myName);
   if (!me) { console.warn('me not found:', S.myName); return; }
@@ -893,20 +849,17 @@ function renderGame(st) {
     const isDlr = i === st.didx;
     const backs = Array(Math.min(p.card_count,7)).fill('<div class="cback"></div>').join('');
     const bidTxt = p.bid===null ? '—' : p.bid;
-    const skipBtn = S.isHost && !p.connected && !p.skipped && p.name !== S.myName
+    const skipBtn = (S.isHost && !p.connected && !p.skipped && p.name !== S.myName)
       ? `<button class="skip-btn" onclick="doSkipPlayer('${p.name}')">SKIP</button>` : '';
-    const skippedBadge = p.skipped ? ' <span style="color:#f87171;font-size:10px;">[SKIPPED]</span>' : '';
-    const waitingBadge = p.waiting ? ' <span style="color:#fbbf24;font-size:10px;">[WAITING]</span>' : '';
     opps.innerHTML += `
       <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}" style="${p.skipped?'opacity:0.45;':''}">
         <div class="opp-av" style="background:${col}22;color:${col}">${p.name.slice(0,2).toUpperCase()}</div>
         <div class="opp-info">
-          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}
-            ${!p.connected?'<span style="color:#f87171;font-size:10px;"> ✗</span>':''}
-            ${skippedBadge}${waitingBadge}</div>
+          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}${skippedBadge}${waitingBadge}
+            ${!p.connected?'<span style="color:#f87171;font-size:10px;"> ✗</span>':''}</div>
           <div class="opp-meta">
-            <span>Bid: <span class="bid-val">${p.skipped?'—':bidTxt}</span></span>
-            ${st.status==='playing'?`<span>Won: <span class="won-val">${p.skipped?'—':p.won}</span></span>`:''}
+            <span>Bid: <span class="bid-val">${bidTxt}</span></span>
+            ${st.status==='playing'?`<span>Won: <span class="won-val">${p.won}</span></span>`:''}
             <span>Pts: ${p.score}</span>
           </div>
         </div>
@@ -922,9 +875,6 @@ function renderGame(st) {
 
   // My name + status
   const myIdx = st.players.findIndex(p => p.name === S.myName);
-  // Show waiting screen if this player is waiting
-  const ws = document.getElementById('waitingScreen');
-  if (ws) ws.style.display = me.waiting ? 'block' : 'none';
   const isMyTurn = myIdx === st.cidx;
   const isDlrMe  = myIdx === st.didx;
   document.getElementById('gMyName').textContent =
@@ -1066,13 +1016,13 @@ function renderScores(st) {
     const exact = row.bid===row.won;
     const badge = i<3
       ? `<span class="rank-badge" style="background:${rankColors[i]}22;color:${rankColors[i]}">${i+1}</span>`
-    const isSkipped = row.skipped === true;
+      : `<span style="color:var(--text3);margin-right:5px;">${i+1}</span>`;
     body.innerHTML += `
-      <tr style="${isSkipped?'opacity:0.5;':''}">
-        <td>${badge}${row.name}${row.name===S.myName?' ★':''}${isSkipped?' <span style="color:#f87171;font-size:10px;">(skipped)</span>':''}</td>
-        <td class="${!isSkipped&&exact?'exact':''}">${isSkipped?'—':row.bid}</td>
-        <td class="${!isSkipped&&exact?'exact':''}">${isSkipped?'—':row.won}</td>
-        <td class="${row.pts>0?'pts-pos':'pts-zero'}">${isSkipped?'0':row.pts>0?'+'+row.pts:row.pts}</td>
+      <tr>
+        <td>${badge}${row.name}${row.name===S.myName?' ★':''}</td>
+        <td class="${exact?'exact':''}">${row.bid}</td>
+        <td class="${exact?'exact':''}">${row.won}</td>
+        <td class="${row.pts>0?'pts-pos':'pts-zero'}">${row.pts>0?'+':''}${row.pts}</td>
         <td style="font-weight:600;color:var(--gold2);">${row.total}</td>
       </tr>`;
   });
@@ -1112,21 +1062,8 @@ function doPlay(idx) {
   S.socket.emit('play', {code:S.myCode, card_idx:idx, name:S.myName});
 }
 
-function renderPaused(st) {
-  show('sGame');
-  const po = document.getElementById('pausedOverlay');
-  if (po) po.style.display = 'flex';
-  // Still render the game underneath
-  const me = st.players.find(p => p.name === S.myName);
-  if (!me) return;
-  // Update round track and top bar
-  document.getElementById('gRound').textContent =
-    `Round ${st.ridx+1} of ${st.total_rounds}`;
-  document.getElementById('gMyScore').textContent = me.score;
-}
-
 function doSkipPlayer(name) {
-  if (!confirm(`Skip ${name} for this round and all future rounds until they rejoin?`)) return;
+  if (!confirm(`Skip ${name} for this round and onwards until they rejoin?`)) return;
   S.socket.emit('skip_player', {code: S.myCode, name: name});
 }
 
