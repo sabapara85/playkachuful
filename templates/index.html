@@ -517,7 +517,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
       <span id="gTrumpName" style="font-size:12px;">Spades</span>
     </div>
     <div class="my-score">Score: <span id="gMyScore">0</span></div>
-    <button class="end-btn" id="gEndBtn" onclick="doCloseRoom()" style="display:none;">✕ END</button>
     <div style="font-size:9px;color:rgba(201,168,76,0.2);letter-spacing:1px;font-family:'Cinzel',serif;display:none;" id="watermark">VP©2025</div>
   </div>
   <!-- Round track -->
@@ -742,6 +741,11 @@ function onState(st) {
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
   S.isHost = me ? me.is_host : false;
+  // Double check: if we created the room, we are host
+  if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
+  // Always update END button visibility on every state
+  const _geb = document.getElementById('gEndBtn');
+  if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
   if (st.status === 'lobby')     return renderLobby(st);
@@ -854,6 +858,15 @@ function renderGame(st) {
   document.getElementById('gMyScore').textContent = me.score;
   const geb = document.getElementById('gEndBtn');
   if (geb) geb.style.display = S.isHost ? '' : 'none';
+  // Also show paused message with close option if game is paused
+  const isPaused = st.players.filter(p => !p.skipped).length < 2 && 
+                   (st.status==='bidding' || st.status==='playing');
+  if (isPaused && S.isHost) {
+    document.getElementById('trickLabel').innerHTML = 
+      'GAME PAUSED — Not enough active players &nbsp;&nbsp;' +
+      '<button onclick="doCloseRoom()" style="background:rgba(220,38,38,0.3);border:1px solid #f87171;' +
+      'border-radius:6px;padding:4px 12px;color:#f87171;cursor:pointer;font-size:12px;">✕ CLOSE ROOM</button>';
+  }
 
   // Round track
   const track = document.getElementById('gTrack');
@@ -1055,6 +1068,8 @@ function renderScores(st) {
 
   document.getElementById('nextRoundBtn').style.display = S.isHost ? '' : 'none';
   document.getElementById('waitNext').style.display = S.isHost ? 'none' : '';
+  const _seb = document.getElementById('gEndBtn');
+  if (_seb) _seb.style.display = S.isHost ? '' : 'none';
 }
 
 // ── Actions ────────────────────────────────────────────────────
@@ -1303,5 +1318,12 @@ function notifyChat(msg) {
   }
 })();
 </script>
+<button id="gEndBtn" onclick="doCloseRoom()" style="display:none;position:fixed;
+  bottom:80px;right:16px;z-index:9999;background:rgba(220,38,38,0.85);
+  border:1px solid #f87171;border-radius:8px;padding:8px 16px;
+  font-family:'Cinzel',serif;font-size:12px;color:#fff;cursor:pointer;
+  letter-spacing:1px;box-shadow:0 2px 10px rgba(0,0,0,0.5);">
+  ✕ END ROOM
+</button>
 </body>
 </html>
