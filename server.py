@@ -252,7 +252,7 @@ class Game:
                 'trump_col':SUIT_COL.get(self.trump,'black'),
                 'cidx':self.cidx,'cur_name':self.players[self.cidx]['name'] if self.players else '',
                 'didx':self.didx,'dealer_name':self.players[self.didx]['name'] if self.status!='lobby' and self.players else '',
-                'trick':self.trick,'players':ps,'history':self.history,
+                'host_sid':self.host_sid,'trick':self.trick,'players':ps,'history':self.history,
                 'forbidden':self.forbidden(),'maxc':self.maxc,
                 'total_rounds':len(self.rseq)}
 
