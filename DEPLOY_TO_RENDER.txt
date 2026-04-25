@@ -1,0 +1,96 @@
+╔══════════════════════════════════════════════════════════════╗
+║         KACHUFUL — Free Deployment on Render.com            ║
+║         Your game online 24/7 — completely FREE             ║
+╚══════════════════════════════════════════════════════════════╝
+
+WHAT YOU GET AFTER THIS:
+  ✅ Permanent link like: https://kachuful.onrender.com
+  ✅ Always online — no laptop needed
+  ✅ Free forever (Render free tier)
+  ✅ Works for all 15 players from anywhere
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STEP 1 — Create GitHub Account (if you don't have one)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Go to: https://github.com/signup
+  Create a free account with your email.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STEP 2 — Upload your game to GitHub
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Go to: https://github.com/new
+  2. Repository name: kachuful
+  3. Set to: Public
+  4. Click "Create repository"
+
+  Then upload your files:
+  5. Click "uploading an existing file"
+  6. Drag and drop ALL files from your KACHUFUL folder:
+       - server.py
+       - requirements.txt
+       - render.yaml
+       - templates/  (folder)
+       - static/     (folder)
+  7. Click "Commit changes"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STEP 3 — Create Render Account
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Go to: https://render.com
+  Sign up with your GitHub account (easiest)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STEP 4 — Deploy on Render
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. In Render dashboard, click "New +" → "Web Service"
+  2. Connect your GitHub account
+  3. Select your "kachuful" repository
+  4. Render will auto-detect settings from render.yaml
+  5. Scroll down, click "Create Web Service"
+  6. Wait 3-5 minutes for deployment
+  7. You will see your live URL:
+       https://kachuful.onrender.com
+       (or similar name)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ STEP 5 — Share with friends
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Share your Render URL on WhatsApp — done!
+  No ngrok. No laptop. Works 24/7.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ⚠️  FREE TIER LIMITATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Render free tier "sleeps" after 15 minutes of no traffic.
+  First person to open the link may wait 30-60 seconds
+  for the server to wake up. After that, everyone plays
+  normally with no delays.
+
+  FIX: Open the link yourself 2 minutes before friends join.
+  That wakes it up and everyone connects instantly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ COST COMPARISON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Render Free      →  ₹0/month  (sleeps when idle)
+  Render Starter   →  ~₹600/month  (always awake)
+  DigitalOcean     →  ~₹500/month  (always awake, more control)
+
+  For casual games with friends: FREE tier is perfect!
+  For commercial use: upgrade to Starter (~₹600/month)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ UPDATING THE GAME LATER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Any time you want to update:
+  1. Upload new files to GitHub
+  2. Render auto-detects and redeploys in 2 minutes
+  That's it — no manual steps needed!
