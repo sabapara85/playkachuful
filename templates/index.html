@@ -163,7 +163,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
 /* Table / trick area */
 .table-zone{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:4px 10px;min-height:120px;}
-.trick-label{font-size:15px;color:var(--text2);letter-spacing:1px;margin-bottom:6px;font-style:italic;}
+.trick-label{font-size:11px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;}
 .trick-cards{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
 .trick-entry{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .trick-pname{font-size:10px;color:var(--text3);}
@@ -355,7 +355,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
 .vol-row label{font-size:10px;color:rgba(201,168,76,0.5);letter-spacing:1px;}
 #volSlider{flex:1;height:3px;accent-color:#c9a84c;cursor:pointer;}
 
-/* ═══ CONFETTI & CELEBRATIONS ═══ */
+/* ═══ CELEBRATION ═══ */
 #celebOverlay{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none;}
 #celebOverlay.on{display:block;}
 canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
@@ -369,15 +369,13 @@ canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
 @keyframes celebPop{from{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
   to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
 @keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-10px);}}
-/* ═══ SHUFFLE ANIMATION ═══ */
+/* ═══ SHUFFLE ═══ */
 #shuffleOverlay{position:fixed;inset:0;z-index:8000;pointer-events:none;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.75);}
+  display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);}
 #shuffleOverlay.on{display:flex;}
 .shuffle-box{text-align:center;}
-.shuffle-cards{display:flex;justify-content:center;gap:4px;margin-bottom:16px;position:relative;height:80px;}
-.sh-card{width:44px;height:64px;border-radius:5px;background:#faf8f0;
-  border:1px solid #d4c090;position:absolute;transition:all 0.3s;}
+.shuffle-cards{display:flex;justify-content:center;margin-bottom:16px;position:relative;height:80px;}
+.sh-card{width:44px;height:64px;border-radius:5px;position:absolute;transition:all 0.3s;}
 .shuffle-txt{font-family:'Cinzel',serif;font-size:16px;color:#c9a84c;
   letter-spacing:3px;animation:pulse 0.6s infinite alternate;}
 @keyframes pulse{from{opacity:0.6;}to{opacity:1;}}
@@ -650,6 +648,7 @@ window.onload = () => {
   if (pathCode) document.getElementById('joinCode').value = pathCode.toUpperCase();
 
   S.socket = io();
+  S._lastRidx = -1; // track round index for shuffle
   S.socket.on('joined',   onJoined);
   S.socket.on('state',    onState);
   S.socket.on('err',           onErr);
@@ -763,61 +762,31 @@ function startFresh() {
 }
 
 function onState(st) {
-  const prevStatus = S.state ? S.state.status : null;
   S.state = st;
   if (!S.myName) S.myName = localStorage.getItem('kf_name') || sessionStorage.getItem('kf_name') || '';
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
-  // isHost: true if me.is_host OR if my sid matches host_sid
-  S.isHost = false;
-  if (me) {
-    S.isHost = me.is_host || (st.host_sid && st.host_sid === me.sid);
-  }
+  S.isHost = me ? me.is_host : false;
+  // Double check: if we created the room, we are host
+  if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
+  // Always update END button visibility on every state
   const _geb = document.getElementById('gEndBtn');
   if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
-  // ── Round end: show celebration THEN scores ──────────────
-  if (st.status === 'round_end') {
-    // Force update Next Round button visibility BEFORE renderScores
-    const nrb = document.getElementById('nextRoundBtn');
-    const wn  = document.getElementById('waitNext');
-    if (nrb) { nrb.style.display = S.isHost ? '' : 'none'; nrb.disabled = false; nrb.textContent = 'Next Round →'; }
-    if (wn)  wn.style.display  = S.isHost ? 'none' : '';
-    // Show celebration on FIRST arrival at round_end (any status before is fine)
-    if (prevStatus !== 'round_end' && st.history && st.history.length > 0) {
-      const last = st.history[st.history.length-1];
-      if (last && last.scores) {
-        const top = [...last.scores].sort((a,b)=>b.pts-a.pts)[0];
-        if (top && top.pts > 0) {
-          // Small delay so scores screen renders first, then celebration pops
-          setTimeout(() => showRoundCelebration(top.name), 300);
-        }
-      }
-    }
-    return renderScores(st);
-  }
-
-  if (st.status === 'lobby')   return renderLobby(st);
-
-  // ── Show shuffle when new round starts ──────────────────────
+  if (st.status === 'lobby')     return renderLobby(st);
   if (st.status === 'bidding') {
-    // Show shuffle if coming from round_end OR if ridx changed (new round)
-    const prevRidx = S.state && S.state.ridx !== undefined ? S.state.ridx : -1;
-    const isNewRound = (prevStatus === 'round_end') ||
-                       (prevStatus === 'playing' && st.ridx !== prevRidx) ||
-                       (prevRidx >= 0 && st.ridx > prevRidx);
-    if (isNewRound && prevStatus !== 'bidding') {
-      showShuffleAnimation(() => {
-        if (S.state && S.state.status === 'bidding') renderGame(S.state);
-        else renderGame(st);
-      });
+    // Show shuffle for ALL players when a new round starts
+    if (S._lastRidx >= 0 && st.ridx > S._lastRidx) {
+      S._lastRidx = st.ridx;
+      showShuffleAnimation(function(){ renderGame(st); });
       return;
     }
+    S._lastRidx = st.ridx;
     return renderGame(st);
   }
-
-  if (st.status === 'playing') return renderGame(st);
+  if (st.status === 'playing')   { S._lastRidx = st.ridx; return renderGame(st); }
+  if (st.status === 'round_end') return renderScores(st);
 }
 
 function onTrickResult(d) {
@@ -831,8 +800,11 @@ function onTrickResult(d) {
 }
 
 function onRoundEnd(d) {
-  // Celebration is now handled in onState when status changes to round_end
-  // This event is kept for compatibility but celebration fires from onState
+  // d.result has scores array from server
+  if (d && d.result && d.result.length > 0) {
+    var top = d.result.slice().sort(function(a,b){return b.pts-a.pts;})[0];
+    if (top && top.pts > 0) showRoundCelebration(top.name);
+  }
 }
 
 function onGameOver(d) {
@@ -853,8 +825,7 @@ function onGameOver(d) {
       </div>`;
     prevScore = p.score; rank++;
   });
-  // Final celebration — show champion
-  if (d.final && d.final.length>0) showFinalCelebration(d.final[0].name);
+  if (d.final && d.final.length > 0) showFinalCelebration(d.final[0].name);
 }
 
 // ── Render Lobby ───────────────────────────────────────────────
@@ -905,13 +876,10 @@ function renderLobby(st) {
       </div>`;
   });
 
-  const _meLobby = st.players.find(p => p.name === S.myName);
-  const _amHostLobby = _meLobby ? (_meLobby.is_host || st.host_sid === _meLobby.sid) : S.isHost;
-  if (_amHostLobby) S.isHost = true;
-  document.getElementById('startBtn').style.display    = _amHostLobby ? '' : 'none';
+  document.getElementById('startBtn').style.display    = S.isHost ? '' : 'none';
   const clb = document.getElementById('closeRoomBtnLobby');
-  if (clb) clb.style.display = _amHostLobby ? '' : 'none';
-  document.getElementById('waitHint').style.display    = _amHostLobby ? 'none' : '';
+  if (clb) clb.style.display = S.isHost ? '' : 'none';
+  document.getElementById('waitHint').style.display    = S.isHost ? 'none' : '';
 }
 
 // ── Render Game ────────────────────────────────────────────────
@@ -1140,14 +1108,10 @@ function renderScores(st) {
       </tr>`;
   });
 
-  // Re-verify isHost from state passed to renderScores
-  const _me = st.players.find(p => p.name === S.myName);
-  const _iH = _me ? (_me.is_host || (st.host_sid && st.host_sid === _me.sid)) : S.isHost;
-  const _nrb = document.getElementById('nextRoundBtn');
-  if (_nrb) { _nrb.style.display = _iH ? '' : 'none'; _nrb.disabled = false; _nrb.textContent = 'Next Round →'; }
-  document.getElementById('waitNext').style.display = _iH ? 'none' : '';
+  document.getElementById('nextRoundBtn').style.display = S.isHost ? '' : 'none';
+  document.getElementById('waitNext').style.display = S.isHost ? 'none' : '';
   const _seb = document.getElementById('gEndBtn');
-  if (_seb) _seb.style.display = _iH ? '' : 'none';
+  if (_seb) _seb.style.display = S.isHost ? '' : 'none';
 }
 
 // ── Actions ────────────────────────────────────────────────────
@@ -1192,9 +1156,6 @@ function doSkipPlayer(name) {
 }
 
 function doNextRound() {
-  // Disable button immediately to prevent double-click
-  const btn = document.getElementById('nextRoundBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Starting...'; }
   S.socket.emit('next_round', {code:S.myCode});
 }
 
@@ -1380,163 +1341,6 @@ function notifyChat(msg) {
   addSystemMsg(msg);
 }
 
-
-// ═══════════════════════════════════════════════════════
-// SOUND ENGINE — Web Audio API (no external files needed)
-// ═══════════════════════════════════════════════════════
-function playClap() {
-  try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    for (let i=0;i<8;i++) {
-      const buf=ctx.createBuffer(1,ctx.sampleRate*0.15,ctx.sampleRate);
-      const d=buf.getChannelData(0);
-      for (let j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.exp(-j/(ctx.sampleRate*0.04));
-      const src=ctx.createBufferSource(); src.buffer=buf;
-      const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1200; f.Q.value=0.5;
-      const g=ctx.createGain(); g.gain.value=0.35;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime+i*0.18);
-    }
-    setTimeout(()=>ctx.close(),3000);
-  } catch(e){}
-}
-
-function playShuffleSound() {
-  try {
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    for (let i=0;i<6;i++) {
-      const buf=ctx.createBuffer(1,ctx.sampleRate*0.08,ctx.sampleRate);
-      const d=buf.getChannelData(0);
-      for (let j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.exp(-j/(ctx.sampleRate*0.03));
-      const src=ctx.createBufferSource(); src.buffer=buf;
-      const f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=2000;
-      const g=ctx.createGain(); g.gain.value=0.25;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime+i*0.12);
-    }
-    setTimeout(()=>ctx.close(),2000);
-  } catch(e){}
-}
-
-function playCrowdCheer() {
-  try {
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
-    for (let i=0;i<12;i++) {
-      const buf=ctx.createBuffer(1,ctx.sampleRate*0.3,ctx.sampleRate);
-      const d=buf.getChannelData(0);
-      for (let j=0;j<d.length;j++) {
-        const env=j<ctx.sampleRate*0.05?j/(ctx.sampleRate*0.05):Math.exp(-(j-ctx.sampleRate*0.05)/(ctx.sampleRate*0.2));
-        d[j]=(Math.random()*2-1)*env*0.4;
-      }
-      const src=ctx.createBufferSource(); src.buffer=buf;
-      const f=ctx.createBiquadFilter(); f.type='bandpass';
-      f.frequency.value=400+i*80; f.Q.value=1;
-      const g=ctx.createGain(); g.gain.value=0.3;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime+i*0.05);
-    }
-    setTimeout(()=>ctx.close(),3000);
-  } catch(e){}
-}
-
-// ═══════════════════════════════════════════════════════
-// CONFETTI ENGINE — Pure CSS canvas (no library)
-// ═══════════════════════════════════════════════════════
-function launchConfetti(duration,colors) {
-  const canvas=document.getElementById('confettiCanvas');
-  if (!canvas) return;
-  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
-  const ctx2=canvas.getContext('2d');
-  const cols=colors||['#c9a84c','#f87171','#4ade80','#60a5fa','#e879f9','#fbbf24','#fff'];
-  const pieces=[];
-  for (let i=0;i<120;i++) {
-    pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,
-      w:Math.random()*10+6,h:Math.random()*6+4,
-      color:cols[Math.floor(Math.random()*cols.length)],
-      rot:Math.random()*Math.PI*2,
-      vx:(Math.random()-0.5)*4,vy:Math.random()*3+2,
-      vr:(Math.random()-0.5)*0.2,life:1});
-  }
-  const end=Date.now()+duration;
-  function draw() {
-    ctx2.clearRect(0,0,canvas.width,canvas.height);
-    const remaining=(end-Date.now())/duration;
-    pieces.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
-      p.life=Math.min(1,remaining*2);
-      ctx2.save(); ctx2.translate(p.x,p.y); ctx2.rotate(p.rot);
-      ctx2.globalAlpha=p.life; ctx2.fillStyle=p.color;
-      ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx2.restore();
-      if (p.y>canvas.height){p.y=-10;p.x=Math.random()*canvas.width;}
-    });
-    if (Date.now()<end) requestAnimationFrame(draw);
-    else ctx2.clearRect(0,0,canvas.width,canvas.height);
-  }
-  draw();
-}
-
-// ═══════════════════════════════════════════════════════
-// ROUND END CELEBRATION
-// ═══════════════════════════════════════════════════════
-function showRoundCelebration(winnerName) {
-  const overlay=document.getElementById('celebOverlay');
-  document.getElementById('celebEmoji').textContent='🎉';
-  document.getElementById('celebTitle').textContent='ROUND WINNER';
-  document.getElementById('celebName').textContent=winnerName;
-  overlay.classList.add('on');
-  launchConfetti(2800,['#c9a84c','#e8c97a','#4ade80','#60a5fa','#fbbf24']);
-  playClap();
-  setTimeout(()=>overlay.classList.remove('on'),3000);
-}
-
-// ═══════════════════════════════════════════════════════
-// FINAL GAME CELEBRATION
-// ═══════════════════════════════════════════════════════
-function showFinalCelebration(winnerName) {
-  const overlay=document.getElementById('celebOverlay');
-  document.getElementById('celebEmoji').textContent='🏆';
-  document.getElementById('celebTitle').textContent='CHAMPION!';
-  document.getElementById('celebName').textContent=winnerName;
-  overlay.classList.add('on');
-  launchConfetti(5000,['#c9a84c','#fbbf24','#fff','#e8c97a','#4ade80','#f87171']);
-  playCrowdCheer();
-  setTimeout(()=>{launchConfetti(3000,['#c9a84c','#fbbf24','#fff']);playCrowdCheer();},2000);
-  setTimeout(()=>overlay.classList.remove('on'),6000);
-}
-
-// ═══════════════════════════════════════════════════════
-// SHUFFLE ANIMATION
-// ═══════════════════════════════════════════════════════
-function showShuffleAnimation(callback) {
-  const overlay=document.getElementById('shuffleOverlay');
-  const container=document.getElementById('shuffleCards');
-  overlay.classList.add('on');
-  container.innerHTML='';
-  playShuffleSound();
-  const colors=['#1a1a7e','#7c1111','#0a4a0a','#4a1a00'];
-  const suits=['♠','♥','♦','♣'];
-  for (let i=0;i<7;i++){
-    const card=document.createElement('div');
-    card.className='sh-card';
-    card.style.background=`linear-gradient(135deg,${colors[i%4]},${colors[(i+1)%4]})`;
-    card.style.left=(i*8)+'px'; card.style.top='0px'; card.style.zIndex=i;
-    card.innerHTML=`<div style="color:rgba(255,255,255,0.3);font-size:18px;text-align:center;margin-top:18px;">${suits[i%4]}</div>`;
-    container.appendChild(card);
-  }
-  const cards=container.querySelectorAll('.sh-card');
-  let phase=0;
-  function animStep(){
-    if (phase===0) cards.forEach((c,i)=>{c.style.transform=`translateX(${(i-3)*22}px) rotate(${(i-3)*8}deg)`;c.style.transition='transform 0.3s';});
-    else if (phase===1){cards.forEach(c=>{c.style.transform='translateX(0) rotate(0)';});playShuffleSound();}
-    else if (phase===2){cards.forEach((c,i)=>{c.style.transform=`translateX(${(i%2===0?-1:1)*18}px) translateY(${(i%3)*-6}px) rotate(${(i-3)*5}deg)`;});playShuffleSound();}
-    else if (phase===3){cards.forEach(c=>{c.style.transform='none';});}
-    else{overlay.classList.remove('on');if(callback)callback();return;}
-    phase++;
-    setTimeout(animStep,phase<4?350:200);
-  }
-  animStep();
-}
-
 // Handle join link + returning player on refresh
 (()=>{
   const path = window.location.pathname;
@@ -1555,6 +1359,159 @@ function showShuffleAnimation(callback) {
     show('sRejoin');
   }
 })();
+
+// ═══════════════════════════════════════
+// SOUNDS (Web Audio — no external files)
+// ═══════════════════════════════════════
+function playClap(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    for(var i=0;i<8;i++){
+      var buf=ctx.createBuffer(1,ctx.sampleRate*0.15,ctx.sampleRate);
+      var d=buf.getChannelData(0);
+      for(var j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.exp(-j/(ctx.sampleRate*0.04));
+      var src=ctx.createBufferSource();src.buffer=buf;
+      var f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=1200;
+      var g=ctx.createGain();g.gain.value=0.35;
+      src.connect(f);f.connect(g);g.connect(ctx.destination);
+      src.start(ctx.currentTime+i*0.18);
+    }
+    setTimeout(function(){ctx.close();},3000);
+  }catch(e){}
+}
+function playShuffleSound(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    for(var i=0;i<6;i++){
+      var buf=ctx.createBuffer(1,ctx.sampleRate*0.08,ctx.sampleRate);
+      var d=buf.getChannelData(0);
+      for(var j=0;j<d.length;j++) d[j]=(Math.random()*2-1)*Math.exp(-j/(ctx.sampleRate*0.03));
+      var src=ctx.createBufferSource();src.buffer=buf;
+      var f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=2000;
+      var g=ctx.createGain();g.gain.value=0.25;
+      src.connect(f);f.connect(g);g.connect(ctx.destination);
+      src.start(ctx.currentTime+i*0.12);
+    }
+    setTimeout(function(){ctx.close();},2000);
+  }catch(e){}
+}
+function playCrowdCheer(){
+  try{
+    var ctx=new(window.AudioContext||window.webkitAudioContext)();
+    for(var i=0;i<12;i++){
+      var buf=ctx.createBuffer(1,ctx.sampleRate*0.3,ctx.sampleRate);
+      var d=buf.getChannelData(0);
+      for(var j=0;j<d.length;j++){
+        var env=j<ctx.sampleRate*0.05?j/(ctx.sampleRate*0.05):Math.exp(-(j-ctx.sampleRate*0.05)/(ctx.sampleRate*0.2));
+        d[j]=(Math.random()*2-1)*env*0.4;
+      }
+      var src=ctx.createBufferSource();src.buffer=buf;
+      var f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=400+i*80;
+      var g=ctx.createGain();g.gain.value=0.3;
+      src.connect(f);f.connect(g);g.connect(ctx.destination);
+      src.start(ctx.currentTime+i*0.05);
+    }
+    setTimeout(function(){ctx.close();},3000);
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════
+// CONFETTI (pure canvas — no library)
+// ═══════════════════════════════════════
+function launchConfetti(duration,colors){
+  var canvas=document.getElementById('confettiCanvas');
+  if(!canvas) return;
+  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+  var ctx2=canvas.getContext('2d');
+  var cols=colors||['#c9a84c','#f87171','#4ade80','#60a5fa','#fbbf24','#fff'];
+  var pieces=[];
+  for(var i=0;i<120;i++){
+    pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-canvas.height,
+      w:Math.random()*10+6,h:Math.random()*6+4,
+      color:cols[Math.floor(Math.random()*cols.length)],
+      rot:Math.random()*Math.PI*2,
+      vx:(Math.random()-0.5)*4,vy:Math.random()*3+2,
+      vr:(Math.random()-0.5)*0.2});
+  }
+  var end=Date.now()+duration;
+  function draw(){
+    ctx2.clearRect(0,0,canvas.width,canvas.height);
+    var remaining=(end-Date.now())/duration;
+    pieces.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;
+      ctx2.save();ctx2.translate(p.x,p.y);ctx2.rotate(p.rot);
+      ctx2.globalAlpha=Math.min(1,remaining*2);
+      ctx2.fillStyle=p.color;ctx2.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx2.restore();
+      if(p.y>canvas.height){p.y=-10;p.x=Math.random()*canvas.width;}
+    });
+    if(Date.now()<end) requestAnimationFrame(draw);
+    else ctx2.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// ═══════════════════════════════════════
+// ROUND CELEBRATION
+// ═══════════════════════════════════════
+function showRoundCelebration(winnerName){
+  var ov=document.getElementById('celebOverlay');
+  document.getElementById('celebEmoji').textContent='🎉';
+  document.getElementById('celebTitle').textContent='ROUND WINNER';
+  document.getElementById('celebName').textContent=winnerName;
+  ov.classList.add('on');
+  launchConfetti(2800,['#c9a84c','#e8c97a','#4ade80','#60a5fa','#fbbf24']);
+  playClap();
+  setTimeout(function(){ov.classList.remove('on');},3000);
+}
+
+// ═══════════════════════════════════════
+// FINAL CELEBRATION
+// ═══════════════════════════════════════
+function showFinalCelebration(winnerName){
+  var ov=document.getElementById('celebOverlay');
+  document.getElementById('celebEmoji').textContent='🏆';
+  document.getElementById('celebTitle').textContent='CHAMPION!';
+  document.getElementById('celebName').textContent=winnerName;
+  ov.classList.add('on');
+  launchConfetti(5000,['#c9a84c','#fbbf24','#fff','#e8c97a','#4ade80','#f87171']);
+  playCrowdCheer();
+  setTimeout(function(){launchConfetti(3000,['#c9a84c','#fbbf24','#fff']);playCrowdCheer();},2000);
+  setTimeout(function(){ov.classList.remove('on');},6000);
+}
+
+// ═══════════════════════════════════════
+// SHUFFLE ANIMATION
+// ═══════════════════════════════════════
+function showShuffleAnimation(callback){
+  var ov=document.getElementById('shuffleOverlay');
+  var container=document.getElementById('shuffleCards');
+  ov.classList.add('on');
+  container.innerHTML='';
+  playShuffleSound();
+  var colors=['#1a1a7e','#7c1111','#0a4a0a','#4a1a00'];
+  var suits=['♠','♥','♦','♣'];
+  for(var i=0;i<7;i++){
+    var card=document.createElement('div');
+    card.className='sh-card';
+    card.style.background='linear-gradient(135deg,'+colors[i%4]+','+colors[(i+1)%4]+')';
+    card.style.left=(i*8)+'px';card.style.top='0px';card.style.zIndex=i;
+    card.style.border='1px solid rgba(255,255,255,0.2)';
+    card.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:18px;text-align:center;margin-top:18px;">'+suits[i%4]+'</div>';
+    container.appendChild(card);
+  }
+  var cards=container.querySelectorAll('.sh-card');
+  var phase=0;
+  function animStep(){
+    if(phase===0) cards.forEach(function(c,i){c.style.transform='translateX('+(i-3)*22+'px) rotate('+(i-3)*8+'deg)';c.style.transition='transform 0.3s';});
+    else if(phase===1){cards.forEach(function(c){c.style.transform='translateX(0) rotate(0)';});playShuffleSound();}
+    else if(phase===2){cards.forEach(function(c,i){c.style.transform='translateX('+(i%2===0?-1:1)*18+'px) rotate('+(i-3)*5+'deg)';});playShuffleSound();}
+    else if(phase===3){cards.forEach(function(c){c.style.transform='none';});}
+    else{ov.classList.remove('on');if(callback)callback();return;}
+    phase++;
+    setTimeout(animStep,phase<4?350:200);
+  }
+  animStep();
+}
 </script>
 <button id="gEndBtn" onclick="doCloseRoom()" style="display:none;position:fixed;
   bottom:80px;right:16px;z-index:9999;background:rgba(220,38,38,0.85);
