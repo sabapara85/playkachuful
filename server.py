@@ -226,7 +226,6 @@ class Game:
         p=self.P(sid)
         if not p: return False
         self.skipped.add(sid)
-        self.waiting.add(sid)  # will be restored at start of next round
         p['cards']=[]; p['bid']=None; p['won']=0
         if self.status=='bidding':
             # Auto advance past skipped in bidding
@@ -282,7 +281,6 @@ class Game:
 
 def bcast(g):
     save_games()
-    # Send personalised state to each player via their SID room
     for p in g.players:
         socketio.emit('state',g.snap(p['sid']),room=p['sid'])
 
@@ -350,8 +348,7 @@ def on_bid(d):
         if p:
             old=p['sid']; p['sid']=request.sid
             if g.host_sid==old: g.host_sid=request.sid
-    # Always ensure player is in their SID room and code room
-    join_room(code); join_room(request.sid)
+            join_room(code); join_room(request.sid)
     ok,msg=g.bid(request.sid,amt)
     if not ok: emit('err',{'msg':msg}); return
     if g.status=='playing':
@@ -370,8 +367,7 @@ def on_play(d):
         if p:
             old=p['sid']; p['sid']=request.sid
             if g.host_sid==old: g.host_sid=request.sid
-    # Always ensure player is in their SID room and code room
-    join_room(code); join_room(request.sid)
+            join_room(code); join_room(request.sid)
     ok,msg=g.play(request.sid,ci)
     if not ok: emit('err',{'msg':msg}); return
     if msg=='trick_done':
@@ -395,8 +391,6 @@ def on_next(d):
     if code not in games: return
     g=games[code]
     if request.sid!=g.host_sid: return
-    # Guard: only advance if currently in round_end state (prevents double-click)
-    if g.status != 'round_end': return
     if g.last(): socketio.emit('game_over',{'final':g.final()},room=g.code); return
     g.advance(); bcast(g)
     nc=g.rseq[g.ridx]
@@ -411,15 +405,10 @@ def on_close_room(d):
         emit('err',{'msg':'Only host can close room'}); return
     socketio.emit('room_closed',{'msg':'Host has closed the room'},room=code)
     del games[code]
-    # Delete from Redis too so stale data never loads
     try:
-        if _redis:
-            _redis.delete('kachuful_games')
-            save_games()  # re-save without this room
-        else:
-            save_games()
-    except Exception as e:
-        save_games()
+        if _redis: _redis.delete('kachuful_games')
+    except: pass
+    save_games()
     print(f'Room {code} closed by host')
 
 @socketio.on('reconnect_player')
