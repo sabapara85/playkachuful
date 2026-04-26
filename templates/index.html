@@ -763,22 +763,45 @@ function startFresh() {
 }
 
 function onState(st) {
+  const prevStatus = S.state ? S.state.status : null;
   S.state = st;
   if (!S.myName) S.myName = localStorage.getItem('kf_name') || sessionStorage.getItem('kf_name') || '';
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
   S.isHost = me ? me.is_host : false;
-  // Double check: if we created the room, we are host
   if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
-  // Always update END button visibility on every state
   const _geb = document.getElementById('gEndBtn');
   if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
-  if (st.status === 'lobby')     return renderLobby(st);
-  if (st.status === 'bidding')   return renderGame(st);
-  if (st.status === 'playing')   return renderGame(st);
-  if (st.status === 'round_end') return renderScores(st);
+  // ── Round end: show celebration THEN scores ──────────────
+  if (st.status === 'round_end') {
+    // Only show celebration on FIRST arrival at round_end (not on re-renders)
+    if (prevStatus !== 'round_end' && st.history && st.history.length > 0) {
+      const last = st.history[st.history.length-1];
+      if (last && last.scores) {
+        const top = [...last.scores].sort((a,b)=>b.pts-a.pts)[0];
+        if (top && top.pts > 0) {
+          showRoundCelebration(top.name);
+        }
+      }
+    }
+    return renderScores(st);
+  }
+
+  if (st.status === 'lobby')   return renderLobby(st);
+
+  // ── Show shuffle when new round starts (transition from round_end) ──
+  if (st.status === 'bidding') {
+    if (prevStatus === 'round_end') {
+      // New round starting — show shuffle then reveal game
+      showShuffleAnimation(() => renderGame(st));
+      return;
+    }
+    return renderGame(st);
+  }
+
+  if (st.status === 'playing') return renderGame(st);
 }
 
 function onTrickResult(d) {
@@ -792,14 +815,8 @@ function onTrickResult(d) {
 }
 
 function onRoundEnd(d) {
-  // Show round winner before scores screen appears
-  if (S.state && S.state.history && S.state.history.length>0) {
-    const last=S.state.history[S.state.history.length-1];
-    if (last && last.scores) {
-      const top=[...last.scores].sort((a,b)=>b.pts-a.pts)[0];
-      if (top && top.pts>0) showRoundCelebration(top.name);
-    }
-  }
+  // Celebration is now handled in onState when status changes to round_end
+  // This event is kept for compatibility but celebration fires from onState
 }
 
 function onGameOver(d) {
@@ -1152,9 +1169,8 @@ function doSkipPlayer(name) {
 }
 
 function doNextRound() {
-  showShuffleAnimation(() => {
-    S.socket.emit('next_round', {code:S.myCode});
-  });
+  // Emit immediately — shuffle will show when new round state arrives
+  S.socket.emit('next_round', {code:S.myCode});
 }
 
 function copyLink() {
