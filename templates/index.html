@@ -281,10 +281,10 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   #sGame{flex-direction:row;flex-wrap:wrap;}
 }
 
-.close-room-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
-  border-radius:8px;padding:9px;font-family:'Cinzel',serif;font-size:12px;color:#f87171;
+.close-room-btn{background:rgba(0,0,0,0.4);border:1px solid rgba(201,168,76,0.4);
+  border-radius:8px;padding:9px;font-family:'Cinzel',serif;font-size:12px;color:rgba(201,168,76,0.8);
   cursor:pointer;letter-spacing:1px;width:100%;margin-top:6px;}
-.close-room-btn:hover{background:rgba(220,38,38,0.35);}
+.close-room-btn:hover{background:rgba(201,168,76,0.15);}
 .end-btn{background:transparent;border:1px solid rgba(248,113,113,0.4);border-radius:6px;
   padding:3px 10px;font-size:10px;color:#f87171;cursor:pointer;font-family:'Cinzel',serif;}
 .end-btn:hover{background:rgba(248,113,113,0.15);}
@@ -664,6 +664,7 @@ window.onload = () => {
   if (pathCode) document.getElementById('joinCode').value = pathCode.toUpperCase();
 
   S.socket = io();
+  S._lastRidx = -1; // track for shuffle
   S.socket.on('joined',   onJoined);
   S.socket.on('state',    onState);
   S.socket.on('err',           onErr);
@@ -790,8 +791,17 @@ function onState(st) {
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
   if (st.status === 'lobby')     return renderLobby(st);
-  if (st.status === 'bidding')   return renderGame(st);
-  if (st.status === 'playing')   return renderGame(st);
+  if (st.status === 'bidding') {
+    // Show shuffle for ALL players when a new round starts
+    if (S._lastRidx >= 0 && st.ridx > S._lastRidx) {
+      S._lastRidx = st.ridx;
+      showShuffleAnimation(function(){ renderGame(st); });
+      return;
+    }
+    S._lastRidx = st.ridx;
+    return renderGame(st);
+  }
+  if (st.status === 'playing')   { S._lastRidx = st.ridx; return renderGame(st); }
   if (st.status === 'round_end') return renderScores(st);
 }
 
@@ -806,10 +816,11 @@ function onTrickResult(d) {
 }
 
 function onRoundEnd(d) {
-  // Show round winner celebration using scores from event data
+  // Show celebration after EVERY round — winner = highest scorer
   if (d && d.result && d.result.length > 0) {
-    var top = d.result.slice().sort(function(a,b){return b.pts-a.pts;})[0];
-    if (top && top.pts > 0) showRoundCelebration(top.name);
+    var sorted = d.result.slice().sort(function(a,b){return b.pts-a.pts;});
+    var top = sorted[0];
+    if (top) showRoundCelebration(top.name);
   }
 }
 
@@ -1162,9 +1173,8 @@ function doSkipPlayer(name) {
 }
 
 function doNextRound() {
-  showShuffleAnimation(function() {
-    S.socket.emit('next_round', {code:S.myCode});
-  });
+  // Emit immediately — shuffle shown for ALL via onState ridx change
+  S.socket.emit('next_round', {code:S.myCode});
 }
 
 function copyLink() {
@@ -1587,9 +1597,9 @@ function showShuffleAnimation(callback) {
 
 </script>
 <button id="gEndBtn" onclick="doCloseRoom()" style="display:none;position:fixed;
-  bottom:80px;right:16px;z-index:9999;background:rgba(220,38,38,0.85);
-  border:1px solid #f87171;border-radius:8px;padding:8px 16px;
-  font-family:'Cinzel',serif;font-size:12px;color:#fff;cursor:pointer;
+  bottom:16px;left:14px;z-index:9999;background:rgba(0,0,0,0.7);
+  border:1px solid rgba(201,168,76,0.6);border-radius:8px;padding:8px 16px;
+  font-family:'Cinzel',serif;font-size:12px;color:rgba(201,168,76,0.9);cursor:pointer;
   letter-spacing:1px;box-shadow:0 2px 10px rgba(0,0,0,0.5);">
   ✕ END ROOM
 </button>
