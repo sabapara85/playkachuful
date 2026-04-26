@@ -12,6 +12,20 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
 import random, string
 
+# ── Upstash Redis persistence ─────────────────────────────────
+try:
+    import redis as redis_lib
+    _redis_url = os.environ.get('UPSTASH_REDIS_URL') or os.environ.get('REDIS_URL')
+    _redis = redis_lib.from_url(_redis_url, decode_responses=True) if _redis_url else None
+    if _redis:
+        _redis.ping()
+        print('Redis connected ✅')
+    else:
+        print('Redis not configured — using file storage')
+except Exception as _e:
+    print(f'Redis unavailable ({_e}) — using file storage')
+    _redis = None
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'kachuful-2024-secret')
 
@@ -67,13 +81,22 @@ def save_games():
                 'players':[{'sid':p['sid'],'name':p['name'],'is_host':p['is_host'],
                     'score':p['score'],'bid':p['bid'],'won':p['won'],
                     'cards':p['cards'],'connected':False} for p in g.players]}
-        with open(SAVE_FILE,'w') as f: json.dump(data,f)
+        payload = json.dumps(data)
+        if _redis:
+            _redis.set('kachuful_games', payload, ex=86400)
+        else:
+            with open(SAVE_FILE,'w') as f: f.write(payload)
     except Exception as e: print(f'Save error: {e}')
 
 def load_games():
     try:
-        if not os.path.exists(SAVE_FILE): return {}
-        with open(SAVE_FILE,'r') as f: data=json.load(f)
+        if _redis:
+            raw = _redis.get('kachuful_games')
+            if not raw: return {}
+            data = json.loads(raw)
+        else:
+            if not os.path.exists(SAVE_FILE): return {}
+            with open(SAVE_FILE,'r') as f: data=json.load(f)
         restored={}
         for code,d in data.items():
             if d['status'] in ('lobby','game_over'): continue
@@ -382,7 +405,15 @@ def on_close_room(d):
         emit('err',{'msg':'Only host can close room'}); return
     socketio.emit('room_closed',{'msg':'Host has closed the room'},room=code)
     del games[code]
-    save_games()
+    # Delete from Redis too so stale data never loads
+    try:
+        if _redis:
+            _redis.delete('kachuful_games')
+            save_games()  # re-save without this room
+        else:
+            save_games()
+    except Exception as e:
+        save_games()
     print(f'Room {code} closed by host')
 
 @socketio.on('reconnect_player')
