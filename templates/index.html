@@ -768,21 +768,30 @@ function onState(st) {
   if (!S.myName) S.myName = localStorage.getItem('kf_name') || sessionStorage.getItem('kf_name') || '';
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
-  S.isHost = me ? me.is_host : false;
-  if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
+  // isHost: true if me.is_host OR if my sid matches host_sid
+  S.isHost = false;
+  if (me) {
+    S.isHost = me.is_host || (st.host_sid && st.host_sid === me.sid);
+  }
   const _geb = document.getElementById('gEndBtn');
   if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
   // ── Round end: show celebration THEN scores ──────────────
   if (st.status === 'round_end') {
-    // Only show celebration on FIRST arrival at round_end (not on re-renders)
+    // Force update Next Round button visibility BEFORE renderScores
+    const nrb = document.getElementById('nextRoundBtn');
+    const wn  = document.getElementById('waitNext');
+    if (nrb) { nrb.style.display = S.isHost ? '' : 'none'; nrb.disabled = false; nrb.textContent = 'Next Round →'; }
+    if (wn)  wn.style.display  = S.isHost ? 'none' : '';
+    // Show celebration on FIRST arrival at round_end (any status before is fine)
     if (prevStatus !== 'round_end' && st.history && st.history.length > 0) {
       const last = st.history[st.history.length-1];
       if (last && last.scores) {
         const top = [...last.scores].sort((a,b)=>b.pts-a.pts)[0];
         if (top && top.pts > 0) {
-          showRoundCelebration(top.name);
+          // Small delay so scores screen renders first, then celebration pops
+          setTimeout(() => showRoundCelebration(top.name), 300);
         }
       }
     }
@@ -791,11 +800,18 @@ function onState(st) {
 
   if (st.status === 'lobby')   return renderLobby(st);
 
-  // ── Show shuffle when new round starts (transition from round_end) ──
+  // ── Show shuffle when new round starts ──────────────────────
   if (st.status === 'bidding') {
-    if (prevStatus === 'round_end') {
-      // New round starting — show shuffle then reveal game
-      showShuffleAnimation(() => renderGame(st));
+    // Show shuffle if coming from round_end OR if ridx changed (new round)
+    const prevRidx = S.state && S.state.ridx !== undefined ? S.state.ridx : -1;
+    const isNewRound = (prevStatus === 'round_end') ||
+                       (prevStatus === 'playing' && st.ridx !== prevRidx) ||
+                       (prevRidx >= 0 && st.ridx > prevRidx);
+    if (isNewRound && prevStatus !== 'bidding') {
+      showShuffleAnimation(() => {
+        if (S.state && S.state.status === 'bidding') renderGame(S.state);
+        else renderGame(st);
+      });
       return;
     }
     return renderGame(st);
@@ -889,10 +905,13 @@ function renderLobby(st) {
       </div>`;
   });
 
-  document.getElementById('startBtn').style.display    = S.isHost ? '' : 'none';
+  const _meLobby = st.players.find(p => p.name === S.myName);
+  const _amHostLobby = _meLobby ? (_meLobby.is_host || st.host_sid === _meLobby.sid) : S.isHost;
+  if (_amHostLobby) S.isHost = true;
+  document.getElementById('startBtn').style.display    = _amHostLobby ? '' : 'none';
   const clb = document.getElementById('closeRoomBtnLobby');
-  if (clb) clb.style.display = S.isHost ? '' : 'none';
-  document.getElementById('waitHint').style.display    = S.isHost ? 'none' : '';
+  if (clb) clb.style.display = _amHostLobby ? '' : 'none';
+  document.getElementById('waitHint').style.display    = _amHostLobby ? 'none' : '';
 }
 
 // ── Render Game ────────────────────────────────────────────────
@@ -1121,10 +1140,14 @@ function renderScores(st) {
       </tr>`;
   });
 
-  document.getElementById('nextRoundBtn').style.display = S.isHost ? '' : 'none';
-  document.getElementById('waitNext').style.display = S.isHost ? 'none' : '';
+  // Re-verify isHost from state passed to renderScores
+  const _me = st.players.find(p => p.name === S.myName);
+  const _iH = _me ? (_me.is_host || (st.host_sid && st.host_sid === _me.sid)) : S.isHost;
+  const _nrb = document.getElementById('nextRoundBtn');
+  if (_nrb) { _nrb.style.display = _iH ? '' : 'none'; _nrb.disabled = false; _nrb.textContent = 'Next Round →'; }
+  document.getElementById('waitNext').style.display = _iH ? 'none' : '';
   const _seb = document.getElementById('gEndBtn');
-  if (_seb) _seb.style.display = S.isHost ? '' : 'none';
+  if (_seb) _seb.style.display = _iH ? '' : 'none';
 }
 
 // ── Actions ────────────────────────────────────────────────────
@@ -1169,7 +1192,9 @@ function doSkipPlayer(name) {
 }
 
 function doNextRound() {
-  // Emit immediately — shuffle will show when new round state arrives
+  // Disable button immediately to prevent double-click
+  const btn = document.getElementById('nextRoundBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting...'; }
   S.socket.emit('next_round', {code:S.myCode});
 }
 
