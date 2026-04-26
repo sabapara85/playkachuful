@@ -12,7 +12,7 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
 import random, string
 
-# ── Upstash Redis persistence ─────────────────────────────────
+# ── Upstash Redis (optional — for persistence across Render restarts) ──
 try:
     import redis as redis_lib
     _redis_url = os.environ.get('UPSTASH_REDIS_URL') or os.environ.get('REDIS_URL')
