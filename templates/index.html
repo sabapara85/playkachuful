@@ -163,7 +163,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
 /* Table / trick area */
 .table-zone{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:4px 10px;min-height:120px;}
-.trick-label{font-size:11px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;}
+.trick-label{font-size:15px;color:var(--text2);letter-spacing:1px;margin-bottom:6px;font-style:italic;}
 .trick-cards{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;}
 .trick-entry{display:flex;flex-direction:column;align-items:center;gap:3px;}
 .trick-pname{font-size:10px;color:var(--text3);}
@@ -175,7 +175,7 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   border-top:1px solid var(--border);padding:10px 12px;flex-shrink:0;}
 .my-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .my-name{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);}
-.my-status{font-size:12px;color:var(--text2);}
+.my-status{font-size:15px;color:var(--text2);}
 .bid-row{color:var(--green-hi);}
 .hand{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
 
@@ -281,19 +281,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   #sGame{flex-direction:row;flex-wrap:wrap;}
 }
 
-.close-room-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
-  border-radius:8px;padding:9px;font-family:'Cinzel',serif;font-size:12px;color:#f87171;
-  cursor:pointer;letter-spacing:1px;width:100%;margin-top:6px;}
-.close-room-btn:hover{background:rgba(220,38,38,0.35);}
-.end-btn{background:transparent;border:1px solid rgba(248,113,113,0.4);border-radius:6px;
-  padding:3px 10px;font-size:10px;color:#f87171;cursor:pointer;font-family:'Cinzel',serif;}
-.end-btn:hover{background:rgba(248,113,113,0.15);}
-.skip-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
-  border-radius:6px;padding:3px 8px;font-size:10px;color:#f87171;cursor:pointer;
-  margin-left:4px;font-family:'Cinzel',serif;letter-spacing:1px;}
-.skip-btn:hover{background:rgba(220,38,38,0.3);}
-.skipped-badge{font-size:10px;color:#f87171;margin-left:4px;}
-.waiting-badge{font-size:10px;color:#fbbf24;margin-left:4px;}
 /* ═══════════════════════════ CHAT ═══════════════════════════ */
 #chatBtn{position:fixed;bottom:70px;right:14px;width:46px;height:46px;
   border-radius:50%;background:rgba(201,168,76,0.9);border:none;
@@ -354,6 +341,34 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   padding-top:8px;border-top:1px solid rgba(201,168,76,0.1);}
 .vol-row label{font-size:10px;color:rgba(201,168,76,0.5);letter-spacing:1px;}
 #volSlider{flex:1;height:3px;accent-color:#c9a84c;cursor:pointer;}
+
+/* ═══ CONFETTI & CELEBRATIONS ═══ */
+#celebOverlay{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none;}
+#celebOverlay.on{display:block;}
+canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
+.celeb-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:9002;text-align:center;pointer-events:none;animation:celebPop 0.5s ease;}
+.celeb-emoji{font-size:64px;display:block;margin-bottom:8px;animation:bounce 0.6s infinite alternate;}
+.celeb-title{font-family:'Cinzel',serif;font-size:22px;color:#c9a84c;
+  letter-spacing:3px;text-shadow:0 0 20px rgba(201,168,76,0.8);margin-bottom:6px;}
+.celeb-name{font-family:'Cinzel',serif;font-size:28px;color:#fff;
+  text-shadow:0 0 30px rgba(255,255,255,0.6);letter-spacing:2px;}
+@keyframes celebPop{from{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+@keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-10px);}}
+
+/* ═══ SHUFFLE ANIMATION ═══ */
+#shuffleOverlay{position:fixed;inset:0;z-index:8000;pointer-events:none;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.75);}
+#shuffleOverlay.on{display:flex;}
+.shuffle-box{text-align:center;}
+.shuffle-cards{display:flex;justify-content:center;gap:4px;margin-bottom:16px;position:relative;height:80px;}
+.sh-card{width:44px;height:64px;border-radius:5px;background:#faf8f0;
+  border:1px solid #d4c090;position:absolute;transition:all 0.3s;}
+.shuffle-txt{font-family:'Cinzel',serif;font-size:16px;color:#c9a84c;
+  letter-spacing:3px;animation:pulse 0.6s infinite alternate;}
+@keyframes pulse{from{opacity:0.6;}to{opacity:1;}}
 </style>
 </head>
 <body>
@@ -402,6 +417,20 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
 </div>
 
 <div id="toastBox"></div>
+<canvas id="confettiCanvas"></canvas>
+<div id="celebOverlay">
+  <div class="celeb-banner" id="celebBanner">
+    <span class="celeb-emoji" id="celebEmoji">🎉</span>
+    <div class="celeb-title" id="celebTitle">ROUND WINNER</div>
+    <div class="celeb-name" id="celebName"></div>
+  </div>
+</div>
+<div id="shuffleOverlay">
+  <div class="shuffle-box">
+    <div class="shuffle-cards" id="shuffleCards"></div>
+    <div class="shuffle-txt">SHUFFLING CARDS...</div>
+  </div>
+</div>
 
 <!-- ══════════ LANDING ══════════ -->
 <div id="sLanding" class="screen on">
@@ -500,9 +529,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   </div>
   <button class="btn full" id="startBtn" onclick="doStart()" style="display:none;">
     START GAME
-  </button>
-  <button class="close-room-btn" id="closeRoomBtnLobby" onclick="doCloseRoom()" style="display:none;">
-    ✕ CLOSE &amp; END ROOM
   </button>
   <div class="info-hint" id="waitHint">Waiting for host to start...</div>
 </div>
@@ -648,15 +674,6 @@ window.onload = () => {
       show('sRejoin');
     }
   });
-  S.socket.on('room_closed', d => {
-    alert(d.msg || 'Room has been closed by host.');
-    localStorage.removeItem('kf_name');
-    localStorage.removeItem('kf_code');
-    sessionStorage.removeItem('kf_name');
-    sessionStorage.removeItem('kf_code');
-    S.myName = ''; S.myCode = '';
-    show('sLanding');
-  });
   S.socket.on('player_joined', d => {
     toast(`${d.name} joined! (${d.count} players)`, 'success');
   });
@@ -741,11 +758,6 @@ function onState(st) {
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
   S.isHost = me ? me.is_host : false;
-  // Double check: if we created the room, we are host
-  if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
-  // Always update END button visibility on every state
-  const _geb = document.getElementById('gEndBtn');
-  if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
   if (st.status === 'lobby')     return renderLobby(st);
@@ -764,7 +776,22 @@ function onTrickResult(d) {
   }, 2200);
 }
 
-function onRoundEnd(d) { /* state will follow, showing scores screen */ }
+function onRoundEnd(d) {
+  // Show round winner celebration before scores screen
+  // Find who won most tricks this round
+  if (S.state) {
+    const hist = S.state.history;
+    if (hist && hist.length > 0) {
+      const last = hist[hist.length-1];
+      if (last && last.scores) {
+        const sorted = [...last.scores].sort((a,b)=>b.pts-a.pts);
+        if (sorted.length > 0 && sorted[0].pts > 0) {
+          showRoundCelebration(sorted[0].name, false);
+        }
+      }
+    }
+  }
+}
 
 function onGameOver(d) {
   clearSession();  // Game ended — clear saved session
@@ -784,6 +811,9 @@ function onGameOver(d) {
       </div>`;
     prevScore = p.score; rank++;
   });
+  // Final celebration
+  const topScore = d.final[0];
+  if (topScore) showFinalCelebration(topScore.name);
 }
 
 // ── Render Lobby ───────────────────────────────────────────────
@@ -835,8 +865,6 @@ function renderLobby(st) {
   });
 
   document.getElementById('startBtn').style.display    = S.isHost ? '' : 'none';
-  const clb = document.getElementById('closeRoomBtnLobby');
-  if (clb) clb.style.display = S.isHost ? '' : 'none';
   document.getElementById('waitHint').style.display    = S.isHost ? 'none' : '';
 }
 
@@ -856,17 +884,6 @@ function renderGame(st) {
   ts.style.color = st.trump_col==='red' ? '#f87171' : '#e2e8f0';
   document.getElementById('gTrumpName').textContent = st.trump_name;
   document.getElementById('gMyScore').textContent = me.score;
-  const geb = document.getElementById('gEndBtn');
-  if (geb) geb.style.display = S.isHost ? '' : 'none';
-  // Also show paused message with close option if game is paused
-  const isPaused = st.players.filter(p => !p.skipped).length < 2 && 
-                   (st.status==='bidding' || st.status==='playing');
-  if (isPaused && S.isHost) {
-    document.getElementById('trickLabel').innerHTML = 
-      'GAME PAUSED — Not enough active players &nbsp;&nbsp;' +
-      '<button onclick="doCloseRoom()" style="background:rgba(220,38,38,0.3);border:1px solid #f87171;' +
-      'border-radius:6px;padding:4px 12px;color:#f87171;cursor:pointer;font-size:12px;">✕ CLOSE ROOM</button>';
-  }
 
   // Round track
   const track = document.getElementById('gTrack');
@@ -886,15 +903,11 @@ function renderGame(st) {
     const isDlr = i === st.didx;
     const backs = Array(Math.min(p.card_count,7)).fill('<div class="cback"></div>').join('');
     const bidTxt = p.bid===null ? '—' : p.bid;
-    const skipBtn = (S.isHost && !p.connected && !p.skipped && p.name !== S.myName)
-      ? `<button class="skip-btn" onclick="doSkipPlayer('${p.name}')">SKIP</button>` : '';
-    const skippedBadge = p.skipped ? ' <span class="skipped-badge">[SKIPPED]</span>' : '';
-    const waitingBadge = p.waiting ? ' <span class="waiting-badge">[WAITING]</span>' : '';
     opps.innerHTML += `
-      <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}" style="${p.skipped?'opacity:0.45;':''}">
+      <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}">
         <div class="opp-av" style="background:${col}22;color:${col}">${p.name.slice(0,2).toUpperCase()}</div>
         <div class="opp-info">
-          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}${skippedBadge}${waitingBadge}
+          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}
             ${!p.connected?'<span style="color:#f87171;font-size:10px;"> ✗</span>':''}</div>
           <div class="opp-meta">
             <span>Bid: <span class="bid-val">${bidTxt}</span></span>
@@ -903,7 +916,6 @@ function renderGame(st) {
           </div>
         </div>
         <div class="opp-cards">${backs}</div>
-        ${skipBtn}
       </div>`;
   });
 
@@ -1068,8 +1080,6 @@ function renderScores(st) {
 
   document.getElementById('nextRoundBtn').style.display = S.isHost ? '' : 'none';
   document.getElementById('waitNext').style.display = S.isHost ? 'none' : '';
-  const _seb = document.getElementById('gEndBtn');
-  if (_seb) _seb.style.display = S.isHost ? '' : 'none';
 }
 
 // ── Actions ────────────────────────────────────────────────────
@@ -1103,18 +1113,11 @@ function doPlay(idx) {
   S.socket.emit('play', {code:S.myCode, card_idx:idx, name:S.myName});
 }
 
-function doCloseRoom() {
-  if (!confirm('Close this room? All players will be disconnected.')) return;
-  S.socket.emit('close_room', {code: S.myCode});
-}
-
-function doSkipPlayer(name) {
-  if (!confirm(`Skip ${name} for this round and onwards until they rejoin?`)) return;
-  S.socket.emit('skip_player', {code: S.myCode, name: name});
-}
-
 function doNextRound() {
-  S.socket.emit('next_round', {code:S.myCode});
+  // Show shuffle animation, then emit next_round
+  showShuffleAnimation(() => {
+    S.socket.emit('next_round', {code:S.myCode});
+  });
 }
 
 function copyLink() {
@@ -1299,6 +1302,210 @@ function notifyChat(msg) {
   addSystemMsg(msg);
 }
 
+// ═══════════════════════════════════════════════
+// CELEBRATION & SHUFFLE ENGINE
+// Pure JS — no external libraries needed
+// ═══════════════════════════════════════════════
+
+// ── Web Audio for sounds (no external files) ──
+function playClap() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    // Clap = filtered noise burst
+    for (let i = 0; i < 8; i++) {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(ctx.sampleRate*0.04));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.5;
+      const g = ctx.createGain();
+      g.gain.value = 0.35;
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(ctx.currentTime + i * 0.18);
+    }
+    setTimeout(() => ctx.close(), 3000);
+  } catch(e) {}
+}
+
+function playShuffleSound() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    for (let i = 0; i < 6; i++) {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(ctx.sampleRate*0.03));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 2000;
+      const g = ctx.createGain(); g.gain.value = 0.25;
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(ctx.currentTime + i * 0.12);
+    }
+    setTimeout(() => ctx.close(), 2000);
+  } catch(e) {}
+}
+
+function playCrowdCheer() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    // Crowd = layered noise with pitch sweep
+    for (let i = 0; i < 12; i++) {
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) {
+        const env = j < ctx.sampleRate*0.05 ? j/(ctx.sampleRate*0.05) : Math.exp(-(j-ctx.sampleRate*0.05)/(ctx.sampleRate*0.2));
+        d[j] = (Math.random()*2-1) * env * 0.4;
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 400 + i * 80;
+      f.Q.value = 1;
+      const g = ctx.createGain(); g.gain.value = 0.3;
+      src.connect(f); f.connect(g); g.connect(ctx.destination);
+      src.start(ctx.currentTime + i * 0.05);
+    }
+    setTimeout(() => ctx.close(), 3000);
+  } catch(e) {}
+}
+
+// ── Pure CSS Confetti (no library) ──
+function launchConfetti(duration, colors) {
+  const canvas = document.getElementById('confettiCanvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx2 = canvas.getContext('2d');
+  const cols = colors || ['#c9a84c','#f87171','#4ade80','#60a5fa','#e879f9','#fbbf24','#fff'];
+  const pieces = [];
+  const count = 120;
+  for (let i = 0; i < count; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 10 + 6,
+      h: Math.random() * 6 + 4,
+      color: cols[Math.floor(Math.random()*cols.length)],
+      rot: Math.random() * Math.PI * 2,
+      vx: (Math.random()-0.5) * 4,
+      vy: Math.random() * 3 + 2,
+      vr: (Math.random()-0.5) * 0.2,
+      life: 1
+    });
+  }
+  const end = Date.now() + duration;
+  let raf;
+  function draw() {
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    const now = Date.now();
+    const remaining = (end - now) / duration;
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      p.life = Math.min(1, remaining * 2);
+      ctx2.save();
+      ctx2.translate(p.x, p.y);
+      ctx2.rotate(p.rot);
+      ctx2.globalAlpha = p.life;
+      ctx2.fillStyle = p.color;
+      ctx2.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx2.restore();
+      if (p.y > canvas.height) {
+        p.y = -10; p.x = Math.random() * canvas.width;
+      }
+    });
+    if (now < end) raf = requestAnimationFrame(draw);
+    else { ctx2.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  draw();
+}
+
+// ── Round End Celebration ──
+function showRoundCelebration(winnerName, isLastRound) {
+  if (isLastRound) return; // Final handled separately
+  const overlay = document.getElementById('celebOverlay');
+  document.getElementById('celebEmoji').textContent = '🎉';
+  document.getElementById('celebTitle').textContent = 'ROUND WINNER';
+  document.getElementById('celebName').textContent = winnerName;
+  overlay.classList.add('on');
+  launchConfetti(2800, ['#c9a84c','#e8c97a','#4ade80','#60a5fa','#fbbf24']);
+  playClap();
+  setTimeout(() => overlay.classList.remove('on'), 3000);
+}
+
+// ── Final Game Celebration ──
+function showFinalCelebration(winnerName) {
+  const overlay = document.getElementById('celebOverlay');
+  document.getElementById('celebEmoji').textContent = '🏆';
+  document.getElementById('celebTitle').textContent = 'CHAMPION!';
+  document.getElementById('celebName').textContent = winnerName;
+  overlay.classList.add('on');
+  launchConfetti(5000, ['#c9a84c','#fbbf24','#fff','#e8c97a','#4ade80','#f87171']);
+  playCrowdCheer();
+  setTimeout(() => {
+    // Second burst
+    launchConfetti(3000, ['#c9a84c','#fbbf24','#fff']);
+    playCrowdCheer();
+  }, 2000);
+  setTimeout(() => overlay.classList.remove('on'), 6000);
+}
+
+// ── Shuffle Animation ──
+function showShuffleAnimation(callback) {
+  const overlay = document.getElementById('shuffleOverlay');
+  const container = document.getElementById('shuffleCards');
+  overlay.classList.add('on');
+  container.innerHTML = '';
+  playShuffleSound();
+  // Build 7 card backs
+  const suits = ['♠','♥','♦','♣'];
+  const colors = ['#1a1a7e','#7c1111','#0a4a0a','#4a1a00'];
+  for (let i = 0; i < 7; i++) {
+    const card = document.createElement('div');
+    card.className = 'sh-card';
+    card.style.background = `linear-gradient(135deg,${colors[i%4]},${colors[(i+1)%4]})`;
+    card.style.left = (i * 8) + 'px';
+    card.style.top = '0px';
+    card.style.zIndex = i;
+    card.innerHTML = `<div style="color:rgba(255,255,255,0.3);font-size:18px;text-align:center;margin-top:18px;">${suits[i%4]}</div>`;
+    container.appendChild(card);
+  }
+  // Animate: fan out then back
+  const cards = container.querySelectorAll('.sh-card');
+  let phase = 0;
+  function animStep() {
+    if (phase === 0) {
+      cards.forEach((c,i) => {
+        c.style.transform = `translateX(${(i-3)*22}px) rotate(${(i-3)*8}deg)`;
+        c.style.transition = 'transform 0.3s';
+      });
+    } else if (phase === 1) {
+      cards.forEach(c => {
+        c.style.transform = 'translateX(0) rotate(0)';
+      });
+      playShuffleSound();
+    } else if (phase === 2) {
+      cards.forEach((c,i) => {
+        c.style.transform = `translateX(${(i%2===0?-1:1)*18}px) translateY(${(i%3)*-6}px) rotate(${(i-3)*5}deg)`;
+      });
+      playShuffleSound();
+    } else if (phase === 3) {
+      cards.forEach(c => { c.style.transform = 'none'; });
+    } else {
+      overlay.classList.remove('on');
+      if (callback) callback();
+      return;
+    }
+    phase++;
+    setTimeout(animStep, phase < 4 ? 350 : 200);
+  }
+  animStep();
+}
+
+// Handle join link + returning player on refresh
 // Handle join link + returning player on refresh
 (()=>{
   const path = window.location.pathname;
@@ -1318,12 +1525,5 @@ function notifyChat(msg) {
   }
 })();
 </script>
-<button id="gEndBtn" onclick="doCloseRoom()" style="display:none;position:fixed;
-  bottom:80px;right:16px;z-index:9999;background:rgba(220,38,38,0.85);
-  border:1px solid #f87171;border-radius:8px;padding:8px 16px;
-  font-family:'Cinzel',serif;font-size:12px;color:#fff;cursor:pointer;
-  letter-spacing:1px;box-shadow:0 2px 10px rgba(0,0,0,0.5);">
-  ✕ END ROOM
-</button>
 </body>
 </html>
