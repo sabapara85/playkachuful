@@ -332,6 +332,12 @@ def on_start(d):
     g=games[code]
     if request.sid!=g.host_sid: emit('err',{'msg':'Only host can start'}); return
     if g.N()<2: emit('err',{'msg':'Need at least 2 players'}); return
+    # Emit shuffle to all players before sending game state
+    socketio.emit('shuffle_cards', {}, room=g.code)
+    if os.environ.get('RENDER'):
+        from gevent import sleep as gsleep; gsleep(1.8)
+    else:
+        eventlet.sleep(1.8)
     g.start(); bcast(g)
     socketio.emit('toast',{'msg':f'Game on! Round 1 — {g.rseq[0]} card. Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
 
@@ -392,6 +398,13 @@ def on_next(d):
     g=games[code]
     if request.sid!=g.host_sid: return
     if g.last(): socketio.emit('game_over',{'final':g.final()},room=g.code); return
+    # Emit shuffle event to ALL players BEFORE advancing, so everyone sees the animation
+    socketio.emit('shuffle_cards', {}, room=g.code)
+    # Small delay so clients can start animation before new state arrives
+    if os.environ.get('RENDER'):
+        from gevent import sleep as gsleep; gsleep(1.8)
+    else:
+        eventlet.sleep(1.8)
     g.advance(); bcast(g)
     nc=g.rseq[g.ridx]
     socketio.emit('toast',{'msg':f'Round {g.ridx+1} — {nc} card(s). Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
