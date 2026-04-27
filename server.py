@@ -385,7 +385,10 @@ def on_play(d):
     if msg=='trick_done':
         wsid,wname,trick=g.resolve()
         socketio.emit('trick_result',{'winner':wname,'trick':trick},room=g.code)
-        _sleep(2.5)
+        if os.environ.get('RENDER'):
+            from gevent import sleep as gsleep; gsleep(2.5)
+        else:
+            eventlet.sleep(2.5)
         if g.done():
             res=g.score()
             bcast(g)
@@ -472,7 +475,10 @@ def on_dc():
         # Wait 6 seconds — if player reconnected with new SID, their old SID
         # will still be in players but connected=True (updated by reconnect)
         # Only mark disconnected if SID still matches (no reconnect happened)
-        _sleep(6)
+        if os.environ.get('RENDER'):
+            from gevent import sleep as gsleep; gsleep(6)
+        else:
+            eventlet.sleep(6)
         for code,g in games.items():
             p=g.P(sid)
             if p and not p['connected']:
