@@ -32,6 +32,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'kachuful-2024-secret')
 async_mode = 'gevent' if os.environ.get('RENDER') else 'eventlet'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode=async_mode)
 
+# Unified sleep compatible with both gevent (Render) and eventlet (local dev)
+def _sleep(secs):
+    if os.environ.get('RENDER'):
+        from gevent import sleep as _gs; _gs(secs)
+    else:
+        eventlet.sleep(secs)
+
 SUITS     = ['S','D','C','H']
 SUIT_SYM  = {'S':'♠','D':'♦','C':'♣','H':'♥'}
 SUIT_NAME = {'S':'Spades','D':'Diamonds','C':'Clubs','H':'Hearts'}
@@ -332,14 +339,13 @@ def on_start(d):
     g=games[code]
     if request.sid!=g.host_sid: emit('err',{'msg':'Only host can start'}); return
     if g.N()<2: emit('err',{'msg':'Need at least 2 players'}); return
-    # Emit shuffle to all players before sending game state
+    # Emit shuffle to all players, then deal after short delay via background task
     socketio.emit('shuffle_cards', {}, room=g.code)
-    if os.environ.get('RENDER'):
-        from gevent import sleep as gsleep; gsleep(1.8)
-    else:
-        eventlet.sleep(1.8)
-    g.start(); bcast(g)
-    socketio.emit('toast',{'msg':f'Game on! Round 1 — {g.rseq[0]} card. Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
+    def _do_start():
+        _sleep(1.8)
+        g.start(); bcast(g)
+        socketio.emit('toast',{'msg':f'Game on! Round 1 — {g.rseq[0]} card. Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
+    socketio.start_background_task(_do_start)
 
 @socketio.on('bid')
 def on_bid(d):
@@ -379,10 +385,7 @@ def on_play(d):
     if msg=='trick_done':
         wsid,wname,trick=g.resolve()
         socketio.emit('trick_result',{'winner':wname,'trick':trick},room=g.code)
-        if os.environ.get('RENDER'):
-            from gevent import sleep as gsleep; gsleep(2.5)
-        else:
-            eventlet.sleep(2.5)
+        _sleep(2.5)
         if g.done():
             res=g.score()
             bcast(g)
@@ -398,16 +401,14 @@ def on_next(d):
     g=games[code]
     if request.sid!=g.host_sid: return
     if g.last(): socketio.emit('game_over',{'final':g.final()},room=g.code); return
-    # Emit shuffle event to ALL players BEFORE advancing, so everyone sees the animation
+    # Emit shuffle event to ALL players, then advance after short delay via background task
     socketio.emit('shuffle_cards', {}, room=g.code)
-    # Small delay so clients can start animation before new state arrives
-    if os.environ.get('RENDER'):
-        from gevent import sleep as gsleep; gsleep(1.8)
-    else:
-        eventlet.sleep(1.8)
-    g.advance(); bcast(g)
-    nc=g.rseq[g.ridx]
-    socketio.emit('toast',{'msg':f'Round {g.ridx+1} — {nc} card(s). Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
+    def _do_next():
+        _sleep(1.8)
+        g.advance(); bcast(g)
+        nc=g.rseq[g.ridx]
+        socketio.emit('toast',{'msg':f'Round {g.ridx+1} — {nc} card(s). Trump: {SUIT_SYM[g.trump]} {SUIT_NAME[g.trump]}','t':'info'},room=g.code)
+    socketio.start_background_task(_do_next)
 
 @socketio.on('close_room')
 def on_close_room(d):
@@ -471,10 +472,7 @@ def on_dc():
         # Wait 6 seconds — if player reconnected with new SID, their old SID
         # will still be in players but connected=True (updated by reconnect)
         # Only mark disconnected if SID still matches (no reconnect happened)
-        if os.environ.get('RENDER'):
-            from gevent import sleep as gsleep; gsleep(6)
-        else:
-            eventlet.sleep(6)
+        _sleep(6)
         for code,g in games.items():
             p=g.P(sid)
             if p and not p['connected']:
