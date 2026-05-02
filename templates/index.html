@@ -281,19 +281,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   #sGame{flex-direction:row;flex-wrap:wrap;}
 }
 
-.close-room-btn{background:rgba(0,0,0,0.4);border:1px solid rgba(201,168,76,0.4);
-  border-radius:8px;padding:9px;font-family:'Cinzel',serif;font-size:12px;color:rgba(201,168,76,0.8);
-  cursor:pointer;letter-spacing:1px;width:100%;margin-top:6px;}
-.close-room-btn:hover{background:rgba(201,168,76,0.15);}
-.end-btn{background:transparent;border:1px solid rgba(248,113,113,0.4);border-radius:6px;
-  padding:3px 10px;font-size:10px;color:#f87171;cursor:pointer;font-family:'Cinzel',serif;}
-.end-btn:hover{background:rgba(248,113,113,0.15);}
-.skip-btn{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);
-  border-radius:6px;padding:3px 8px;font-size:10px;color:#f87171;cursor:pointer;
-  margin-left:4px;font-family:'Cinzel',serif;letter-spacing:1px;}
-.skip-btn:hover{background:rgba(220,38,38,0.3);}
-.skipped-badge{font-size:10px;color:#f87171;margin-left:4px;}
-.waiting-badge{font-size:10px;color:#fbbf24;margin-left:4px;}
 /* ═══════════════════════════ CHAT ═══════════════════════════ */
 #chatBtn{position:fixed;bottom:70px;right:14px;width:46px;height:46px;
   border-radius:50%;background:rgba(201,168,76,0.9);border:none;
@@ -354,33 +341,6 @@ body{background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif;font
   padding-top:8px;border-top:1px solid rgba(201,168,76,0.1);}
 .vol-row label{font-size:10px;color:rgba(201,168,76,0.5);letter-spacing:1px;}
 #volSlider{flex:1;height:3px;accent-color:#c9a84c;cursor:pointer;}
-/* ═══ CONFETTI & CELEBRATIONS ═══ */
-#celebOverlay{position:fixed;inset:0;z-index:9000;pointer-events:none;display:none;}
-#celebOverlay.on{display:block;}
-canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
-.celeb-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  z-index:9002;text-align:center;pointer-events:none;animation:celebPop 0.5s ease;}
-.celeb-emoji{font-size:64px;display:block;margin-bottom:8px;animation:bounce 0.6s infinite alternate;}
-.celeb-title{font-family:'Cinzel',serif;font-size:22px;color:#c9a84c;
-  letter-spacing:3px;text-shadow:0 0 20px rgba(201,168,76,0.8);margin-bottom:6px;}
-.celeb-name{font-family:'Cinzel',serif;font-size:28px;color:#fff;
-  text-shadow:0 0 30px rgba(255,255,255,0.6);letter-spacing:2px;}
-@keyframes celebPop{from{opacity:0;transform:translate(-50%,-50%) scale(0.5);}
-  to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
-@keyframes bounce{from{transform:translateY(0);}to{transform:translateY(-10px);}}
-
-/* ═══ SHUFFLE ANIMATION ═══ */
-#shuffleOverlay{position:fixed;inset:0;z-index:8000;pointer-events:none;
-  display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,0.75);}
-#shuffleOverlay.on{display:flex;}
-.shuffle-box{text-align:center;}
-.shuffle-cards{display:flex;justify-content:center;gap:4px;margin-bottom:16px;position:relative;height:90px;width:200px;margin-left:auto;margin-right:auto;}
-.sh-card{width:44px;height:64px;border-radius:5px;background:#faf8f0;
-  border:1px solid #d4c090;position:absolute;transition:all 0.3s;}
-.shuffle-txt{font-family:'Cinzel',serif;font-size:16px;color:#c9a84c;
-  letter-spacing:3px;animation:pulse 0.6s infinite alternate;}
-@keyframes pulse{from{opacity:0.6;}to{opacity:1;}}
 </style>
 </head>
 <body>
@@ -410,13 +370,13 @@ canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
 <div id="musicPanel">
   <div class="mp-title">BACKGROUND MUSIC</div>
   <div class="mp-track" onclick="playTrack(0)" id="tr0">
-    <span class="ti">Casino Ambience</span><span class="tn">●</span>
+    <span class="ti">Indian Festive</span><span class="tn">●</span>
   </div>
   <div class="mp-track" onclick="playTrack(1)" id="tr1">
-    <span class="ti">Jazz Lounge</span><span class="tn">●</span>
+    <span class="ti">Bollywood Lofi</span><span class="tn">●</span>
   </div>
   <div class="mp-track" onclick="playTrack(2)" id="tr2">
-    <span class="ti">Calm Piano</span><span class="tn">●</span>
+    <span class="ti">Dholak Beats</span><span class="tn">●</span>
   </div>
   <div class="mp-track" onclick="playTrack(3)" id="tr3">
     <span class="ti">Stop Music</span><span class="tn">■</span>
@@ -429,20 +389,6 @@ canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
 </div>
 
 <div id="toastBox"></div>
-<canvas id="confettiCanvas"></canvas>
-<div id="celebOverlay">
-  <div class="celeb-banner" id="celebBanner">
-    <span class="celeb-emoji" id="celebEmoji">🎉</span>
-    <div class="celeb-title" id="celebTitle">ROUND WINNER</div>
-    <div class="celeb-name" id="celebName"></div>
-  </div>
-</div>
-<div id="shuffleOverlay">
-  <div class="shuffle-box">
-    <div class="shuffle-cards" id="shuffleCards"></div>
-    <div class="shuffle-txt">SHUFFLING CARDS...</div>
-  </div>
-</div>
 
 <!-- ══════════ LANDING ══════════ -->
 <div id="sLanding" class="screen on">
@@ -541,9 +487,6 @@ canvas#confettiCanvas{position:fixed;inset:0;z-index:9001;pointer-events:none;}
   </div>
   <button class="btn full" id="startBtn" onclick="doStart()" style="display:none;">
     START GAME
-  </button>
-  <button class="close-room-btn" id="closeRoomBtnLobby" onclick="doCloseRoom()" style="display:none;">
-    ✕ CLOSE &amp; END ROOM
   </button>
   <div class="info-hint" id="waitHint">Waiting for host to start...</div>
 </div>
@@ -672,10 +615,6 @@ window.onload = () => {
   S.socket.on('round_end',    onRoundEnd);
   S.socket.on('game_over',    onGameOver);
   S.socket.on('chat_msg',   onChatMsg);
-  // Shuffle event: server tells ALL clients to show shuffle animation
-  S.socket.on('shuffle_cards', function() {
-    showShuffleAnimation(null);
-  });
   // Auto-reconnect: when socket reconnects after drop, restore player SID
   S.socket.on('connect', () => {
     if (!S.myName) S.myName = localStorage.getItem('kf_name') || sessionStorage.getItem('kf_name') || '';
@@ -692,15 +631,6 @@ window.onload = () => {
       if (el2) el2.textContent = 'Room: ' + S.myCode;
       show('sRejoin');
     }
-  });
-  S.socket.on('room_closed', d => {
-    alert(d.msg || 'Room has been closed by host.');
-    localStorage.removeItem('kf_name');
-    localStorage.removeItem('kf_code');
-    sessionStorage.removeItem('kf_name');
-    sessionStorage.removeItem('kf_code');
-    S.myName = ''; S.myCode = '';
-    show('sLanding');
   });
   S.socket.on('player_joined', d => {
     toast(`${d.name} joined! (${d.count} players)`, 'success');
@@ -786,11 +716,6 @@ function onState(st) {
   if (!S.myCode) S.myCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code') || '';
   const me = st.players.find(p => p.name === S.myName);
   S.isHost = me ? me.is_host : false;
-  // Double check: if we created the room, we are host
-  if (!S.isHost && me && st.host_sid === me.sid) S.isHost = true;
-  // Always update END button visibility on every state
-  const _geb = document.getElementById('gEndBtn');
-  if (_geb) _geb.style.display = S.isHost ? '' : 'none';
   if (me && me.cards && me.cards.length > 0) S.myCards = me.cards;
 
   if (st.status === 'lobby')     return renderLobby(st);
@@ -809,20 +734,7 @@ function onTrickResult(d) {
   }, 2200);
 }
 
-function onRoundEnd(d) {
-  // Show round winner celebration after EVERY round
-  // Winner = player with most pts THIS round; on tie, highest total score wins
-  if (d && d.result && d.result.length > 0) {
-    var sorted = d.result.slice().sort(function(a,b){
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      return b.total - a.total;
-    });
-    var top = sorted[0];
-    if (top && top.pts > 0) {
-      showRoundCelebration(top.name);
-    }
-  }
-}
+function onRoundEnd(d) { /* state will follow, showing scores screen */ }
 
 function onGameOver(d) {
   clearSession();  // Game ended — clear saved session
@@ -842,7 +754,6 @@ function onGameOver(d) {
       </div>`;
     prevScore = p.score; rank++;
   });
-  if (d.final && d.final.length > 0) showFinalCelebration(d.final[0].name);
 }
 
 // ── Render Lobby ───────────────────────────────────────────────
@@ -894,8 +805,6 @@ function renderLobby(st) {
   });
 
   document.getElementById('startBtn').style.display    = S.isHost ? '' : 'none';
-  const clb = document.getElementById('closeRoomBtnLobby');
-  if (clb) clb.style.display = S.isHost ? '' : 'none';
   document.getElementById('waitHint').style.display    = S.isHost ? 'none' : '';
 }
 
@@ -915,17 +824,6 @@ function renderGame(st) {
   ts.style.color = st.trump_col==='red' ? '#f87171' : '#e2e8f0';
   document.getElementById('gTrumpName').textContent = st.trump_name;
   document.getElementById('gMyScore').textContent = me.score;
-  const geb = document.getElementById('gEndBtn');
-  if (geb) geb.style.display = S.isHost ? '' : 'none';
-  // Also show paused message with close option if game is paused
-  const isPaused = st.players.filter(p => !p.skipped).length < 2 && 
-                   (st.status==='bidding' || st.status==='playing');
-  if (isPaused && S.isHost) {
-    document.getElementById('trickLabel').innerHTML = 
-      'GAME PAUSED — Not enough active players &nbsp;&nbsp;' +
-      '<button onclick="doCloseRoom()" style="background:rgba(220,38,38,0.3);border:1px solid #f87171;' +
-      'border-radius:6px;padding:4px 12px;color:#f87171;cursor:pointer;font-size:12px;">✕ CLOSE ROOM</button>';
-  }
 
   // Round track
   const track = document.getElementById('gTrack');
@@ -945,15 +843,11 @@ function renderGame(st) {
     const isDlr = i === st.didx;
     const backs = Array(Math.min(p.card_count,7)).fill('<div class="cback"></div>').join('');
     const bidTxt = p.bid===null ? '—' : p.bid;
-    const skipBtn = (S.isHost && !p.connected && !p.skipped && p.name !== S.myName)
-      ? `<button class="skip-btn" onclick="doSkipPlayer('${p.name}')">SKIP</button>` : '';
-    const skippedBadge = p.skipped ? ' <span class="skipped-badge">[SKIPPED]</span>' : '';
-    const waitingBadge = p.waiting ? ' <span class="waiting-badge">[WAITING]</span>' : '';
     opps.innerHTML += `
-      <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}" style="${p.skipped?'opacity:0.45;':''}">
+      <div class="opp-seat ${isAct?'active':''} ${isDlr?'dealer':''}">
         <div class="opp-av" style="background:${col}22;color:${col}">${p.name.slice(0,2).toUpperCase()}</div>
         <div class="opp-info">
-          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}${skippedBadge}${waitingBadge}
+          <div class="opp-name">${p.name}${isDlr?'<span class="dealer-d">D</span>':''}
             ${!p.connected?'<span style="color:#f87171;font-size:10px;"> ✗</span>':''}</div>
           <div class="opp-meta">
             <span>Bid: <span class="bid-val">${bidTxt}</span></span>
@@ -962,7 +856,6 @@ function renderGame(st) {
           </div>
         </div>
         <div class="opp-cards">${backs}</div>
-        ${skipBtn}
       </div>`;
   });
 
@@ -1081,18 +974,69 @@ function makeCard(c, playable, isTrump, inTrick) {
     inTrick ? 'in-trick' : ''
   ].join(' ');
   const sym = SUIT_SYM[c.suit];
+  const mid = cardMid(c.rank, sym, isRed, inTrick);
   return `
     <div class="${cls}">
       <div class="card-corner tl">
         <div class="card-rank">${c.rank}</div>
         <div class="card-suit-sm">${sym}</div>
       </div>
-      <div class="card-center">${sym}</div>
+      ${mid}
       <div class="card-corner br">
         <div class="card-rank">${c.rank}</div>
         <div class="card-suit-sm">${sym}</div>
       </div>
     </div>`;
+}
+
+/* Returns the middle section of a card based on rank */
+function cardMid(rank, sym, isRed, inTrick) {
+  const col = isRed ? '#c0392b' : '#1a1a2e';
+  const ps  = inTrick ? '11px' : '12px';  /* pip font size */
+  const cs  = inTrick ? '18px' : '22px';  /* court/ace font size */
+
+  /* Helper: one pip row */
+  function pr(n, flip) {
+    const rot = flip ? 'transform:rotate(180deg);' : '';
+    let row = '';
+    for(let i=0;i<n;i++) row += `<span style="color:${col};font-size:${ps};${rot}">${sym}</span>`;
+    return `<div style="display:flex;justify-content:space-around;width:100%;">${row}</div>`;
+  }
+
+  /* pip layout per rank — strict 2-column grid inside 64px middle zone */
+  const layouts = {
+    'A': `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;">
+            <span style="color:${col};font-size:${cs};">${sym}</span></div>`,
+    '2': pr(1,false) + pr(1,true),
+    '3': pr(1,false) + pr(1,false) + pr(1,true),
+    '4': pr(2,false) + pr(2,true),
+    '5': pr(2,false) + pr(1,false) + pr(2,true),
+    '6': pr(2,false) + pr(2,false) + pr(2,true),
+    '7': pr(2,false) + pr(1,false) + pr(2,false) + pr(2,true),
+    '8': pr(2,false) + pr(1,false) + pr(2,false) + pr(1,true) + pr(2,true),
+    '9': pr(2,false) + pr(2,false) + pr(1,false) + pr(2,true) + pr(2,true),
+    '10':pr(2,false) + pr(1,false) + pr(2,false) + pr(2,true) + pr(1,true) + pr(2,true),
+    'J': `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            width:100%;height:100%;background:${isRed?'#fff5f5':'#f5f5ff'};border-radius:3px;gap:2px;">
+            <span style="color:${col};font-size:${cs};">${sym}</span>
+            <span style="color:${col};font-size:8px;font-weight:800;opacity:0.6;letter-spacing:1px;">JACK</span>
+          </div>`,
+    'Q': `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            width:100%;height:100%;background:${isRed?'#fff5f5':'#f5f5ff'};border-radius:3px;gap:2px;">
+            <span style="color:${col};font-size:${cs};">${sym}</span>
+            <span style="color:${col};font-size:8px;font-weight:800;opacity:0.6;letter-spacing:1px;">QUEEN</span>
+          </div>`,
+    'K': `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            width:100%;height:100%;background:${isRed?'#fff5f5':'#f5f5ff'};border-radius:3px;gap:2px;">
+            <span style="color:${col};font-size:${cs};">${sym}</span>
+            <span style="color:${col};font-size:8px;font-weight:800;opacity:0.6;letter-spacing:1px;">KING</span>
+          </div>`
+  };
+
+  const content = layouts[rank] || layouts['A'];
+  return `<div style="position:absolute;top:26px;left:4px;right:4px;bottom:26px;
+    display:flex;flex-direction:column;justify-content:space-around;
+    align-items:center;overflow:hidden;">${content}</div>`;
 }
 
 // ── Render Scores ──────────────────────────────────────────────
@@ -1127,8 +1071,6 @@ function renderScores(st) {
 
   document.getElementById('nextRoundBtn').style.display = S.isHost ? '' : 'none';
   document.getElementById('waitNext').style.display = S.isHost ? 'none' : '';
-  const _seb = document.getElementById('gEndBtn');
-  if (_seb) _seb.style.display = S.isHost ? '' : 'none';
 }
 
 // ── Actions ────────────────────────────────────────────────────
@@ -1162,18 +1104,7 @@ function doPlay(idx) {
   S.socket.emit('play', {code:S.myCode, card_idx:idx, name:S.myName});
 }
 
-function doCloseRoom() {
-  if (!confirm('Close this room? All players will be disconnected.')) return;
-  S.socket.emit('close_room', {code: S.myCode});
-}
-
-function doSkipPlayer(name) {
-  if (!confirm(`Skip ${name} for this round and onwards until they rejoin?`)) return;
-  S.socket.emit('skip_player', {code: S.myCode, name: name});
-}
-
 function doNextRound() {
-  // Server will emit shuffle_cards to ALL players, then send new state after delay
   S.socket.emit('next_round', {code:S.myCode});
 }
 
@@ -1273,17 +1204,19 @@ let currentTrack = -1, musicPanelOpen = false;
 
 const TRACKS = [
   {
-    name: 'Casino Ambience',
-    // Soft casino background — royalty free from freepd.com via proxy
-    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    name: 'Indian Festive',
+    // Upbeat Indian tabla/sitar style — royalty free, Pixabay
+    url: 'https://cdn.pixabay.com/audio/2022/10/30/audio_3449386a44.mp3'
   },
   {
-    name: 'Jazz Lounge',
-    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3'
+    name: 'Bollywood Lofi',
+    // Relaxed Indian lofi — royalty free, Pixabay
+    url: 'https://cdn.pixabay.com/audio/2023/06/07/audio_06e3c7e06b.mp3'
   },
   {
-    name: 'Calm Piano',
-    url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'
+    name: 'Dholak Beats',
+    // Energetic dholak/percussion — royalty free, Pixabay
+    url: 'https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3'
   }
 ];
 
@@ -1377,321 +1310,6 @@ function notifyChat(msg) {
     show('sRejoin');
   }
 })();
-
-function playClap() {
-  try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    // Clap = filtered noise burst
-    for (let i = 0; i < 8; i++) {
-      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let j = 0; j < d.length; j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(ctx.sampleRate*0.04));
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const f = ctx.createBiquadFilter();
-      f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.5;
-      const g = ctx.createGain();
-      g.gain.value = 0.35;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime + i * 0.18);
-    }
-    setTimeout(() => ctx.close(), 3000);
-  } catch(e) {}
-}
-
-function playShuffleSound() {
-  try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    for (let i = 0; i < 6; i++) {
-      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let j = 0; j < d.length; j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(ctx.sampleRate*0.03));
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const f = ctx.createBiquadFilter();
-      f.type = 'highpass'; f.frequency.value = 2000;
-      const g = ctx.createGain(); g.gain.value = 0.25;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime + i * 0.12);
-    }
-    setTimeout(() => ctx.close(), 2000);
-  } catch(e) {}
-}
-
-function playCrowdCheer() {
-  try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    // Crowd = layered noise with pitch sweep
-    for (let i = 0; i < 12; i++) {
-      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let j = 0; j < d.length; j++) {
-        const env = j < ctx.sampleRate*0.05 ? j/(ctx.sampleRate*0.05) : Math.exp(-(j-ctx.sampleRate*0.05)/(ctx.sampleRate*0.2));
-        d[j] = (Math.random()*2-1) * env * 0.4;
-      }
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      const f = ctx.createBiquadFilter();
-      f.type = 'bandpass';
-      f.frequency.value = 400 + i * 80;
-      f.Q.value = 1;
-      const g = ctx.createGain(); g.gain.value = 0.3;
-      src.connect(f); f.connect(g); g.connect(ctx.destination);
-      src.start(ctx.currentTime + i * 0.05);
-    }
-    setTimeout(() => ctx.close(), 3000);
-  } catch(e) {}
-}
-
-// ── Pure CSS Confetti (no library) ──
-function launchConfetti(duration, colors) {
-  const canvas = document.getElementById('confettiCanvas');
-  if (!canvas) return;
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const ctx2 = canvas.getContext('2d');
-  const cols = colors || ['#c9a84c','#f87171','#4ade80','#60a5fa','#e879f9','#fbbf24','#fff'];
-  const pieces = [];
-  const count = 120;
-  for (let i = 0; i < count; i++) {
-    pieces.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height - canvas.height,
-      w: Math.random() * 10 + 6,
-      h: Math.random() * 6 + 4,
-      color: cols[Math.floor(Math.random()*cols.length)],
-      rot: Math.random() * Math.PI * 2,
-      vx: (Math.random()-0.5) * 4,
-      vy: Math.random() * 3 + 2,
-      vr: (Math.random()-0.5) * 0.2,
-      life: 1
-    });
-  }
-  const end = Date.now() + duration;
-  let raf;
-  function draw() {
-    ctx2.clearRect(0, 0, canvas.width, canvas.height);
-    const now = Date.now();
-    const remaining = (end - now) / duration;
-    pieces.forEach(p => {
-      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
-      p.life = Math.min(1, remaining * 2);
-      ctx2.save();
-      ctx2.translate(p.x, p.y);
-      ctx2.rotate(p.rot);
-      ctx2.globalAlpha = p.life;
-      ctx2.fillStyle = p.color;
-      ctx2.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-      ctx2.restore();
-      if (p.y > canvas.height) {
-        p.y = -10; p.x = Math.random() * canvas.width;
-      }
-    });
-    if (now < end) raf = requestAnimationFrame(draw);
-    else { ctx2.clearRect(0,0,canvas.width,canvas.height); }
-  }
-  draw();
-}
-
-// ── Round End Celebration ──
-function showRoundCelebration(winnerName) {
-  const overlay = document.getElementById('celebOverlay');
-  document.getElementById('celebEmoji').textContent = '🎉';
-  document.getElementById('celebTitle').textContent = 'ROUND WINNER';
-  document.getElementById('celebName').textContent = winnerName;
-  overlay.classList.add('on');
-  launchConfetti(2800, ['#c9a84c','#e8c97a','#4ade80','#60a5fa','#fbbf24']);
-  playClap();
-  setTimeout(() => overlay.classList.remove('on'), 3000);
-}
-
-// ── Final Game Celebration ──
-function showFinalCelebration(winnerName) {
-  const overlay = document.getElementById('celebOverlay');
-  document.getElementById('celebEmoji').textContent = '🏆';
-  document.getElementById('celebTitle').textContent = 'CHAMPION!';
-  document.getElementById('celebName').textContent = winnerName;
-  overlay.classList.add('on');
-  launchConfetti(5000, ['#c9a84c','#fbbf24','#fff','#e8c97a','#4ade80','#f87171']);
-  playCrowdCheer();
-  setTimeout(() => {
-    // Second burst
-    launchConfetti(3000, ['#c9a84c','#fbbf24','#fff']);
-    playCrowdCheer();
-  }, 2000);
-  setTimeout(() => overlay.classList.remove('on'), 6000);
-}
-
-// ── Shuffle Animation — Two-handed riffle shuffle ──
-function showShuffleAnimation(callback) {
-  const overlay = document.getElementById('shuffleOverlay');
-  const container = document.getElementById('shuffleCards');
-  overlay.classList.add('on');
-  container.innerHTML = '';
-
-  // Build two half-deck stacks of 6 cards each
-  const colors = ['#1a1a7e','#7c1111','#0a4a0a','#4a1a00','#1a1a5e','#5e1a1a'];
-  const suits = ['♠','♥','♦','♣','♠','♥'];
-  const leftCards = [], rightCards = [];
-
-  // Left stack (positioned left of center)
-  for (let i = 0; i < 6; i++) {
-    const card = document.createElement('div');
-    card.className = 'sh-card';
-    card.style.cssText = `background:linear-gradient(135deg,${colors[i]},${colors[(i+2)%6]});
-      position:absolute; left:${20 + i*2}px; top:${i*1.5}px; z-index:${i};
-      transform:rotate(-8deg); transition:all 0.25s ease;`;
-    card.innerHTML = `<div style="color:rgba(255,255,255,0.35);font-size:16px;text-align:center;padding-top:16px;">${suits[i]}</div>`;
-    container.appendChild(card);
-    leftCards.push(card);
-  }
-
-  // Right stack (positioned right of center)
-  for (let i = 0; i < 6; i++) {
-    const card = document.createElement('div');
-    card.className = 'sh-card';
-    card.style.cssText = `background:linear-gradient(135deg,${colors[(i+3)%6]},${colors[i]});
-      position:absolute; left:${120 + i*2}px; top:${i*1.5}px; z-index:${i};
-      transform:rotate(8deg); transition:all 0.25s ease;`;
-    card.innerHTML = `<div style="color:rgba(255,255,255,0.35);font-size:16px;text-align:center;padding-top:16px;">${suits[(i+2)%4]}</div>`;
-    container.appendChild(card);
-    rightCards.push(card);
-  }
-
-  // Update text
-  const txt = overlay.querySelector('.shuffle-txt');
-  if (txt) txt.textContent = 'SHUFFLING CARDS...';
-
-  let shuffleCount = 0;
-  const totalShuffles = 3;
-
-  function doRiffle() {
-    shuffleCount++;
-    playShuffleSound();
-
-    // Phase 1: Bring both stacks toward center, tilt inward
-    leftCards.forEach((c, i) => {
-      c.style.transition = 'all 0.22s ease';
-      c.style.left = (50 + i * 1.5) + 'px';
-      c.style.top = (20 + i * 1.2) + 'px';
-      c.style.transform = 'rotate(-3deg)';
-    });
-    rightCards.forEach((c, i) => {
-      c.style.transition = 'all 0.22s ease';
-      c.style.left = (110 - i * 1.5) + 'px';
-      c.style.top = (20 + i * 1.2) + 'px';
-      c.style.transform = 'rotate(3deg)';
-    });
-
-    // Phase 2: Riffle — interleave cards flying in from both sides
-    setTimeout(() => {
-      playShuffleSound();
-      const allCards = [];
-      // Interleave left and right cards
-      for (let i = 0; i < 6; i++) {
-        allCards.push({ card: leftCards[i], fromLeft: true, order: i });
-        allCards.push({ card: rightCards[i], fromLeft: false, order: i });
-      }
-      // Each card arcs to the center pile with a slight stagger
-      allCards.forEach(({ card, fromLeft, order }, idx) => {
-        setTimeout(() => {
-          card.style.transition = 'all 0.18s cubic-bezier(0.25,0.46,0.45,0.94)';
-          const finalX = 78 + (idx % 3) * 2;
-          const finalY = idx * 1.8;
-          card.style.left = finalX + 'px';
-          card.style.top = finalY + 'px';
-          card.style.transform = `rotate(${(Math.random() - 0.5) * 6}deg)`;
-          card.style.zIndex = idx;
-        }, idx * 28);
-      });
-    }, 260);
-
-    // Phase 3: Square up the deck
-    setTimeout(() => {
-      const allCards = container.querySelectorAll('.sh-card');
-      allCards.forEach((c, i) => {
-        c.style.transition = 'all 0.2s ease';
-        c.style.left = (76 + i * 1.5) + 'px';
-        c.style.top = (i * 1.5) + 'px';
-        c.style.transform = 'rotate(0deg)';
-      });
-    }, 700);
-
-    // Phase 4: Fan back to two halves for next riffle or final spread
-    setTimeout(() => {
-      if (shuffleCount < totalShuffles) {
-        // Re-split into two halves for next riffle
-        leftCards.forEach((c, i) => {
-          c.style.transition = 'all 0.2s ease';
-          c.style.left = (20 + i * 2) + 'px';
-          c.style.top = (i * 1.5) + 'px';
-          c.style.transform = 'rotate(-8deg)';
-        });
-        rightCards.forEach((c, i) => {
-          c.style.transition = 'all 0.2s ease';
-          c.style.left = (120 + i * 2) + 'px';
-          c.style.top = (i * 1.5) + 'px';
-          c.style.transform = 'rotate(8deg)';
-        });
-        setTimeout(doRiffle, 350);
-      } else {
-        // Final: fan out all cards in a nice spread, then close and hide
-        const allCards = container.querySelectorAll('.sh-card');
-        allCards.forEach((c, i) => {
-          c.style.transition = 'all 0.3s ease';
-          c.style.left = (10 + i * 14) + 'px';
-          c.style.top = '8px';
-          c.style.transform = `rotate(${(i - 5.5) * 7}deg)`;
-          c.style.zIndex = i;
-        });
-        // Close and call callback
-        setTimeout(() => {
-          allCards.forEach(c => {
-            c.style.transition = 'all 0.25s ease';
-            c.style.left = '76px';
-            c.style.top = '0px';
-            c.style.transform = 'rotate(0deg)';
-          });
-          setTimeout(() => {
-            overlay.classList.remove('on');
-            if (callback) callback();
-          }, 300);
-        }, 600);
-      }
-    }, 950);
-  }
-
-  // Short pause before starting so overlay is visible
-  setTimeout(doRiffle, 200);
-}
-
-// Handle join link + returning player on refresh
-// Handle join link + returning player on refresh
-(()=>{
-  const path = window.location.pathname;
-  const m = path.match(/\/join\/([A-Z]{5})/i);
-  if (m) document.getElementById('joinCode').value = m[1].toUpperCase();
-
-  // Returning player — show rejoin screen automatically on refresh
-  const savedName = localStorage.getItem('kf_name') || sessionStorage.getItem('kf_name');
-  const savedCode = localStorage.getItem('kf_code') || sessionStorage.getItem('kf_code');
-  if (savedName && savedCode) {
-    S.myName = savedName; S.myCode = savedCode;
-    const el1 = document.getElementById('rejoinName');
-    const el2 = document.getElementById('rejoinCode');
-    if (el1) el1.textContent = savedName;
-    if (el2) el2.textContent = 'Room: ' + savedCode;
-    show('sRejoin');
-  }
-})();
-
 </script>
-<button id="gEndBtn" onclick="doCloseRoom()" style="display:none;position:fixed;
-  bottom:16px;left:14px;z-index:9999;background:rgba(0,0,0,0.7);
-  border:1px solid rgba(201,168,76,0.6);border-radius:8px;padding:8px 16px;
-  font-family:'Cinzel',serif;font-size:12px;color:rgba(201,168,76,0.9);cursor:pointer;
-  letter-spacing:1px;box-shadow:0 2px 10px rgba(0,0,0,0.5);">
-  ✕ END ROOM
-</button>
 </body>
 </html>
