@@ -493,6 +493,64 @@ def on_dc():
             socketio.start_background_task(delayed_disconnect)
             break
 
+
+@app.route('/admin/VIRALP2025')
+def admin_dashboard():
+    rows = []
+    for code, g in games.items():
+        connected = sum(1 for p in g.players if p['connected'])
+        total     = len(g.players)
+        skipped   = len(g.skipped)
+        rnd       = f"{g.ridx+1}/{len(g.rseq)}" if g.rseq else '-'
+        trump_sym = {'S':'♠','D':'♦','C':'♣','H':'♥'}.get(g.trump,'')
+        rows.append(f'''
+        <tr>
+          <td><b>{code}</b></td>
+          <td>{total}</td>
+          <td style="color:#4ade80">{connected}</td>
+          <td>{skipped if skipped else '-'}</td>
+          <td>{rnd}</td>
+          <td>{trump_sym} {g.trump or '-'}</td>
+          <td><span style="color:{'#fbbf24' if g.status=='bidding' else '#4ade80' if g.status=='playing' else '#60a5fa' if g.status=='lobby' else '#f87171'}">{g.status}</span></td>
+        </tr>''')
+    redis_status = '✅ Redis connected' if _redis else '📁 File storage'
+    total_players = sum(len(g.players) for g in games.values())
+    active_players = sum(sum(1 for p in g.players if p['connected']) for g in games.values())
+    html = f'''<!DOCTYPE html><html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kachuful Admin</title>
+<meta http-equiv="refresh" content="5">
+<style>
+  body{background:#0d2818;color:#f0e6c8;font-family:monospace;padding:16px;}
+  h1{color:#c9a84c;font-size:20px;letter-spacing:3px;margin-bottom:4px;}
+  .sub{color:rgba(240,230,200,0.4);font-size:11px;margin-bottom:20px;}
+  .stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .stat{background:rgba(0,0,0,0.4);border:1px solid rgba(201,168,76,0.3);
+    border-radius:8px;padding:12px 16px;min-width:120px;}
+  .sv{font-size:28px;font-weight:700;color:#c9a84c;}
+  .sl{font-size:11px;color:rgba(240,230,200,0.5);margin-top:2px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{color:#c9a84c;text-align:left;padding:8px 10px;border-bottom:1px solid rgba(201,168,76,0.2);font-size:11px;letter-spacing:1px;}
+  td{padding:8px 10px;border-bottom:1px solid rgba(201,168,76,0.08);vertical-align:middle;}
+  tr:hover td{background:rgba(201,168,76,0.05);}
+  .empty{text-align:center;padding:40px;color:rgba(240,230,200,0.3);font-size:14px;}
+  .redis{font-size:12px;color:rgba(240,230,200,0.4);margin-top:16px;}
+  .refresh{font-size:11px;color:rgba(240,230,200,0.3);margin-top:8px;}
+</style></head>
+<body>
+<h1>KACHUFUL ADMIN</h1>
+<div class="sub">Live Dashboard — Auto refreshes every 5 seconds</div>
+<div class="stats">
+  <div class="stat"><div class="sv">{len(games)}</div><div class="sl">Active Rooms</div></div>
+  <div class="stat"><div class="sv">{total_players}</div><div class="sl">Total Players</div></div>
+  <div class="stat"><div class="sv" style="color:#4ade80">{active_players}</div><div class="sl">Connected Now</div></div>
+</div>
+{'<table><thead><tr><th>ROOM</th><th>PLAYERS</th><th>ONLINE</th><th>SKIPPED</th><th>ROUND</th><th>TRUMP</th><th>STATUS</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table>' if games else '<div class="empty">No active rooms right now</div>'}
+<div class="redis">Storage: {redis_status}</div>
+<div class="refresh">Last updated: auto-refresh every 5s</div>
+</body></html>'''
+    return html
+
 @app.route('/')
 def index(): return render_template('index.html')
 
